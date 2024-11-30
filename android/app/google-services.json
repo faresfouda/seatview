@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "721113994943",
+    "project_id": "seatview-4b9a4",
+    "storage_bucket": "seatview-4b9a4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:721113994943:android:159a5d61c6f154c071180a",
+        "android_client_info": {
+          "package_name": "com.example.seatview"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "721113994943-7defmhc8lq8if3p6sikl8o9hqok6ae8n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.seatview",
+            "certificate_hash": "030002a50c5f27e560b488be9baa098b70f5c0eb"
+          }
+        },
+        {
+          "client_id": "721113994943-0cq76r6m3v2v1g2d4pfroijuvmbilpqs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3F212oWm4JW3pjovZgBzycKDKhBO3kdE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "721113994943-0cq76r6m3v2v1g2d4pfroijuvmbilpqs.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
