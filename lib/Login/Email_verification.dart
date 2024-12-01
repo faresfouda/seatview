@@ -4,6 +4,8 @@ import 'package:seatview/Components/component.dart';
 import 'package:seatview/Main/Home_Screen.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
+  const EmailVerificationScreen({super.key});
+
   @override
   _EmailVerificationScreenState createState() => _EmailVerificationScreenState();
 }

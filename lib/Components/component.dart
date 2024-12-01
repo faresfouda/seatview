@@ -7,11 +7,11 @@ class DefaultTextButton extends StatelessWidget {
   final Color color;
 
   const DefaultTextButton({
-    Key? key,
+    super.key,
     required this.onPressed,
     required this.text,
     this.color = Colors.white, // Default color is white
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,13 +44,13 @@ class DefaultTextField extends StatelessWidget {
   final String? Function(String?)? validator;
 
   const DefaultTextField({
-    Key? key,
+    super.key,
     required this.text,
     required this.obscure_value,
     this.controller,
     this.onChanged,
     this.validator,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -89,12 +89,12 @@ class DefaultElevatedButton extends StatelessWidget {
   final double iconSize;
 
   const DefaultElevatedButton({
-    Key? key,
+    super.key,
     required this.onPressed,
     this.label,
     this.icon,
     this.iconSize = 24.0, // Default icon size
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +138,7 @@ class DefaultSnackbar {
         content: Text(message),
         backgroundColor: backgroundColor,
         behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),

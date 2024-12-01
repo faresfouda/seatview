@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class Splash_Screen extends StatelessWidget {
+  const Splash_Screen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -8,7 +10,7 @@ class Splash_Screen extends StatelessWidget {
         children: [
           // Background image
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               image: DecorationImage(
                 image: NetworkImage('https://i.pinimg.com/736x/09/e6/ed/09e6ed0653078f870697cb0128b3d207.jpg'),
                 //image: AssetImage('assets/background.jpeg'),
@@ -23,13 +25,13 @@ class Splash_Screen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Spacer(),
+              const Spacer(),
               // "Get Started" button
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    minimumSize: Size(double.infinity, 50), backgroundColor: Colors.blue, // Full-width button
+                    minimumSize: const Size(double.infinity, 50), backgroundColor: Colors.blue, // Full-width button
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ), // Button color
@@ -37,7 +39,7 @@ class Splash_Screen extends StatelessWidget {
                   onPressed: () {
                     // Navigate to the next page or perform another action
                   },
-                  child: Text(
+                  child: const Text(
                     'Get Started',
                     style: TextStyle(
                       fontSize: 18,
@@ -46,13 +48,13 @@ class Splash_Screen extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               // "Already a member?" sign-in text
               GestureDetector(
                 onTap: () {
                   // Navigate to sign-in page
                 },
-                child: Text(
+                child: const Text(
                   'Already a member? Sign In',
                   style: TextStyle(
                     color: Colors.white,
@@ -60,7 +62,7 @@ class Splash_Screen extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 40), // Add some bottom spacing
+              const SizedBox(height: 40), // Add some bottom spacing
             ],
           ),
         ],
