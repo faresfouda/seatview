@@ -7,6 +7,7 @@ import 'package:seatview/Login/Login.dart';
 import 'package:seatview/Login/Signup.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:seatview/Main/Home_Screen.dart';
+import 'package:seatview/Main/RestaurantBookingScreen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,6 +57,7 @@ class MyApp extends StatelessWidget {
         'forgot_password': (context) => const ForgotPasswordScreen(),
         'home': (context) => Home_Screen(),
         'verification': (context) => const EmailVerificationScreen(),
+        'RestaurantBooking': (context) => RestaurantBookingScreen(),
       },
     );
   }
