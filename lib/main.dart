@@ -7,6 +7,8 @@ import 'package:seatview/Login/Login.dart';
 import 'package:seatview/Login/Signup.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:seatview/Main/Home_Screen.dart';
+import 'package:seatview/Main/ProfileScreen.dart';
+import 'package:seatview/Main/RestaurantAboutScreen.dart';
 import 'package:seatview/Main/RestaurantBookingScreen.dart';
 
 void main() async {
@@ -58,6 +60,8 @@ class MyApp extends StatelessWidget {
         'home': (context) => Home_Screen(),
         'verification': (context) => const EmailVerificationScreen(),
         'RestaurantBooking': (context) => RestaurantBookingScreen(),
+        'RestaurantAboutScreen': (context) => RestaurantAboutScreen(),
+        'ProfileScreen': (context) => ProfileScreen(),
       },
     );
   }
