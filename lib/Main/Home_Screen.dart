@@ -7,9 +7,6 @@ import 'package:seatview/Main/DashboardScreen.dart';
 import 'package:seatview/Main/ProfileScreen.dart';
 import 'package:seatview/Main/FavouriteScreen.dart';
 
-
-
-
 class Home_Screen extends StatefulWidget {
   @override
   _HomescreenState createState() => _HomescreenState();
@@ -24,7 +21,6 @@ class _HomescreenState extends State<Home_Screen>
     FavouriteScreen(),
     ProfileScreen(),
   ];
-
 
   @override
   void initState() {
@@ -57,15 +53,14 @@ class _HomescreenState extends State<Home_Screen>
           IconButton(
             icon: const Icon(Icons.search, color: Colors.red),
             onPressed: () {
-              // Handle notification button click
+              // Handle search button click
             },
           ),
         ],
       ),
       body: _screens[_motionTabBarController!.index],
       bottomNavigationBar: MotionTabBar(
-        controller:
-            _motionTabBarController, // Connect to MotionTabBarController
+        controller: _motionTabBarController, // Connect to MotionTabBarController
         initialSelectedTab: "Home", // Initial tab
         labels: const ["Dashboard", "Home", "favourite", "Profile"],
         icons: const [
@@ -97,16 +92,16 @@ class _HomescreenState extends State<Home_Screen>
   }
 }
 
-
- // Import the RestaurantAboutScreen
+// A placeholder for adding items to the favorites list
+void _addToFavorites(Map<String, dynamic> item, BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('${item['title']} added to favorites',),
+      backgroundColor: Colors.green),
+  );
+}
 
 class HomePage extends StatelessWidget {
-
-  // A placeholder for adding items to the favorites list
-  void _addToFavorites(Map<String, dynamic> item) {
-
-  }
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -171,7 +166,7 @@ class HomePage extends StatelessWidget {
                           'description': 'Delicious grilled asparagus.',
                           'rating': 5.0,
                           'imageUrl': 'https://via.placeholder.com/150',
-                        });
+                        }, context);
                       },
                     ),
                   ),
