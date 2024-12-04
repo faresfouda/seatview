@@ -1,22 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
+import 'package:seatview/API/restaurant_list.dart';
 import 'package:seatview/Login/Cubit_auth.dart';
 import 'package:seatview/Login/Email_verification.dart';
 import 'package:seatview/Login/Forget_password.dart';
 import 'package:seatview/Login/Login.dart';
 import 'package:seatview/Login/Signup.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:seatview/Main/DessertsScreen.dart';
+import 'package:seatview/Main/DrinksScreen.dart';
+import 'package:seatview/Main/FavoritesProvider.dart';
 import 'package:seatview/Main/Home_Screen.dart';
+import 'package:seatview/Main/MealsScreen.dart';
 import 'package:seatview/Main/ProfileScreen.dart';
 import 'package:seatview/Main/RestaurantAboutScreen.dart';
 import 'package:seatview/Main/RestaurantBookingScreen.dart';
+import 'package:seatview/Main/RestaurantsScreen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
   runApp(
-    BlocProvider(
-      create: (context) => AuthCubit()..checkCurrentUser(), // Checking current user on app start
+    MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthCubit>(
+          create: (context) => AuthCubit()..checkCurrentUser(), // AuthCubit
+        ),
+        ChangeNotifierProvider(create: (_) => FavoritesProvider()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -60,8 +73,14 @@ class MyApp extends StatelessWidget {
         'home': (context) => Home_Screen(),
         'verification': (context) => const EmailVerificationScreen(),
         'RestaurantBooking': (context) => RestaurantBookingScreen(),
-        'RestaurantAboutScreen': (context) => RestaurantAboutScreen(),
+        'RestaurantAboutScreen': (context) => RestaurantAboutScreen(
+            restaurant: ModalRoute.of(context)!.settings.arguments
+                as Map<String, dynamic>),
         'ProfileScreen': (context) => ProfileScreen(),
+        'RestaurantsScreen': (context) => RestaurantsScreen(),
+        'DrinksScreen': (context) => DrinksScreen(),
+        'MealsScreen': (context) => Mealsscreen(),
+        'DessertsScreen': (context) => DessertsScreen(),
       },
     );
   }

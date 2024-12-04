@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:seatview/Main/RestaurantBookingScreen.dart';
+import 'package:seatview/API/restaurant_list.dart';
 
 class RestaurantAboutScreen extends StatelessWidget {
+  final Map<String, dynamic> restaurant;
+
+  // Constructor to accept restaurant data
+  const RestaurantAboutScreen({required this.restaurant});
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 4,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Restaurant Details'),
-          bottom:  TabBar(
+          title: Text('${restaurant['title']} Details'),
+          bottom: TabBar(
             labelColor: Colors.red[600],
             indicatorColor: Colors.red[600],
-            tabs: [
+            tabs: const [
               Tab(text: 'About'),
-              Tab(text: 'Vips'),
+              Tab(text: 'Gallery'),
               Tab(text: 'Tables'),
               Tab(text: 'VIP Rooms'),
             ],
@@ -22,17 +28,10 @@ class RestaurantAboutScreen extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            // About Tab
-            AboutTab(),
-
-            // Gallery Tab
-            GalleryTab(),
-
-            // Tables Location Tab
-            TablesLocationTab(),
-
-            // VIP Rooms Tab
-            VIPRoomsTab(),
+            AboutTab(restaurant: restaurant),
+            GalleryTab(restaurant: restaurant), // Pass restaurant to GalleryTab
+            TablesLocationTab(restaurant: restaurant), // Pass restaurant to TablesLocationTab
+            VIPRoomsTab(restaurant: restaurant), // Pass restaurant to VIPRoomsTab
           ],
         ),
       ),
@@ -42,6 +41,11 @@ class RestaurantAboutScreen extends StatelessWidget {
 
 // About Tab
 class AboutTab extends StatelessWidget {
+  final Map<String, dynamic> restaurant;
+
+  // Constructor accepting restaurant data
+  const AboutTab({required this.restaurant});
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -52,22 +56,21 @@ class AboutTab extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.network(
-              'https://i.pinimg.com/736x/6b/08/3b/6b083bd6cfa02b3ca4cce07a018600c8.jpg',
+              restaurant['imageUrl'],  // Using data from the restaurant object
               height: 200,
               width: double.infinity,
               fit: BoxFit.cover,
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Delicious Bites Restaurant',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          Text(
+            restaurant['title'],
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Welcome to Delicious Bites, where we serve the best cuisines in town. '
-                'Enjoy our wide variety of dishes prepared with the freshest ingredients in a cozy atmosphere.',
-            style: TextStyle(fontSize: 16),
+          Text(
+            restaurant['description'],
+            style: const TextStyle(fontSize: 16),
           ),
           const SizedBox(height: 16),
           Center(
@@ -99,6 +102,10 @@ class AboutTab extends StatelessWidget {
 
 // Gallery Tab
 class GalleryTab extends StatelessWidget {
+  final Map<String, dynamic> restaurant;
+
+  const GalleryTab({required this.restaurant});
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -109,12 +116,12 @@ class GalleryTab extends StatelessWidget {
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
         ),
-        itemCount: 6,
+        itemCount: restaurant['galleryImages'].length, // Assuming 'galleryImages' is a list in the restaurant data
         itemBuilder: (context, index) {
           return ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.network(
-              'https://via.placeholder.com/150',
+              restaurant['galleryImages'][index], // Access gallery images
               fit: BoxFit.cover,
             ),
           );
@@ -126,6 +133,10 @@ class GalleryTab extends StatelessWidget {
 
 // Tables Location Tab
 class TablesLocationTab extends StatelessWidget {
+  final Map<String, dynamic> restaurant;
+
+  const TablesLocationTab({required this.restaurant});
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -140,7 +151,7 @@ class TablesLocationTab extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.network(
-              'https://i.pinimg.com/736x/3d/5b/a8/3d5ba8dbfc44cb0289960774e742c38e.jpg', // Replace with actual layout image
+              restaurant['layoutImage'], // Use restaurant layout image
               fit: BoxFit.cover,
             ),
           ),
@@ -152,23 +163,18 @@ class TablesLocationTab extends StatelessWidget {
 
 // VIP Rooms Tab
 class VIPRoomsTab extends StatelessWidget {
+  final Map<String, dynamic> restaurant;
+
+  const VIPRoomsTab({required this.restaurant});
+
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16.0),
-      children: [
-        _buildVIPRoomCard(
-          'VIP Room 1',
-          'https://i.pinimg.com/736x/61/46/81/6146818ab5942e55707b075424c395a2.jpg',
-          'Spacious and luxurious for private dining.',
-        ),
-        const SizedBox(height: 16),
-        _buildVIPRoomCard(
-          'VIP Room 2',
-          'https://i.pinimg.com/736x/62/4d/5a/624d5a33250700c26855ec40ee44cf42.jpg',
-          'Exclusive space with premium service.',
-        ),
-      ],
+      children: List.generate(restaurant['vipRooms'].length, (index) {
+        var room = restaurant['vipRooms'][index]; // Access VIP room data
+        return _buildVIPRoomCard(room['name'], room['imageUrl'], room['description']);
+      }),
     );
   }
 

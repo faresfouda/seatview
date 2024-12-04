@@ -1,11 +1,22 @@
+import 'package:dynamic_fa_icons/dynamic_fa_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:motion_tab_bar_v2/motion-tab-bar.dart';
 import 'package:motion_tab_bar_v2/motion-tab-controller.dart';
+import 'package:provider/provider.dart';
+import 'package:seatview/API/restaurant_list.dart';
+import 'package:seatview/Components/RestaurantCard.dart';
 import 'package:seatview/Components/bulidcard.dart';
-import 'package:seatview/Components/component.dart';
 import 'package:seatview/Main/DashboardScreen.dart';
+import 'package:seatview/Main/DrinksScreen.dart';
+import 'package:seatview/Main/FavoritesProvider.dart';
 import 'package:seatview/Main/ProfileScreen.dart';
 import 'package:seatview/Main/FavouriteScreen.dart';
+import 'package:seatview/Main/RestaurantAboutScreen.dart';
+import 'package:seatview/Main/SearchScreen.dart';
+
+
+
 
 class Home_Screen extends StatefulWidget {
   @override
@@ -21,6 +32,7 @@ class _HomescreenState extends State<Home_Screen>
     FavouriteScreen(),
     ProfileScreen(),
   ];
+
 
   @override
   void initState() {
@@ -44,23 +56,33 @@ class _HomescreenState extends State<Home_Screen>
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: const Text(
-          'SeatView',
-          style: TextStyle(
-              color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+        title: Padding(
+          padding: const EdgeInsets.only(left: 140),
+          child: const Text(
+            'SeatView',
+            style: TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.bold
+            ),
+          ),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.search, color: Colors.red),
             onPressed: () {
-              // Handle search button click
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SearchScreen()),
+              );
             },
           ),
         ],
       ),
       body: _screens[_motionTabBarController!.index],
       bottomNavigationBar: MotionTabBar(
-        controller: _motionTabBarController, // Connect to MotionTabBarController
+        controller:
+        _motionTabBarController, // Connect to MotionTabBarController
         initialSelectedTab: "Home", // Initial tab
         labels: const ["Dashboard", "Home", "favourite", "Profile"],
         icons: const [
@@ -92,18 +114,26 @@ class _HomescreenState extends State<Home_Screen>
   }
 }
 
-// A placeholder for adding items to the favorites list
-void _addToFavorites(Map<String, dynamic> item, BuildContext context) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('${item['title']} added to favorites',),
-      backgroundColor: Colors.green),
-  );
-}
+
+// Import the RestaurantAboutScreen
+
 
 class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final favoritesProvider = Provider.of<FavoritesProvider>(context);
+    final selectedRestaurant = restaurantList[0];
+
+    final drinksCount = restaurantList.where((restaurant) {
+      return restaurant['tags'].contains('drinks');
+    }).length;
+    final mealsCount = restaurantList.where((restaurant) {
+      return restaurant['tags'].contains('meals');
+    }).length;
+    final dessertsCount = restaurantList.where((restaurant) {
+      return restaurant['tags'].contains('desserts');
+    }).length;
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Padding(
@@ -121,61 +151,30 @@ class HomePage extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    // Handle 'View More' click
+                    Navigator.pushNamed(context, 'RestaurantsScreen');
                   },
                   child: const Text('View More', style: TextStyle(color: Colors.red)),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.grey[200],
-              ),
-              child: Column(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      // Navigate to the RestaurantAboutScreen
-                      Navigator.pushNamed(context, 'RestaurantAboutScreen');
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        'https://i.pinimg.com/736x/6b/08/3b/6b083bd6cfa02b3ca4cce07a018600c8.jpg',
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  ListTile(
-                    title: const Text('Asparagus'),
-                    subtitle: const Row(
-                      children: [
-                        Icon(Icons.star, color: Colors.yellow, size: 16),
-                        Text('5.0 (23 Reviews)', style: TextStyle(fontSize: 12)),
-                      ],
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.favorite_border, color: Colors.red),
-                      onPressed: () {
-                        _addToFavorites({
-                          'title': 'Asparagus',
-                          'description': 'Delicious grilled asparagus.',
-                          'rating': 5.0,
-                          'imageUrl': 'https://via.placeholder.com/150',
-                        }, context);
-                      },
-                    ),
-                  ),
-                ],
-              ),
+            RestaurantCard(
+              imageUrl: selectedRestaurant['imageUrl'] as String,
+              title: selectedRestaurant['title'] as String,
+              description: selectedRestaurant['description'] as String,
+              rating: selectedRestaurant['rating'] as double,
+              reviewsCount: 23, // Sample reviews count
+              onFavoritePressed: () {
+                if (favoritesProvider.isFavorite(selectedRestaurant)) {
+                  favoritesProvider.removeFavorite(selectedRestaurant);
+                } else {
+                  favoritesProvider.addFavorite(selectedRestaurant);
+                }
+              },
+              isFavorite: favoritesProvider.isFavorite(selectedRestaurant),
+              restaurant: selectedRestaurant,
             ),
-            const SizedBox(height: 20),
-
-            // Food Categories Section
+            const SizedBox(height: 15),
             const Text(
               'Food Categories',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -183,26 +182,35 @@ class HomePage extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
+              children:  [
                 CategoryCard(
                   title: 'Drinks',
-                  icon: Icons.local_drink,
-                  count: 5,
+                  icon: FontAwesomeIcons.martiniGlass,
+                  count: drinksCount,
                   color: Colors.red,
+                  onPressed: (){
+                    Navigator.pushNamed(context, 'DrinksScreen');
+                  },
                 ),
                 SizedBox(width: 10),
                 CategoryCard(
                   title: 'Meals',
-                  icon: Icons.restaurant,
-                  count: 20,
+                  icon: FontAwesomeIcons.utensils,
+                  count: mealsCount,
                   color: Colors.orange,
+                  onPressed: (){
+                    Navigator.pushNamed(context, 'MealsScreen');
+                  },
                 ),
                 SizedBox(width: 10),
                 CategoryCard(
-                  title: 'Hot',
-                  icon: Icons.local_fire_department,
-                  count: 8,
+                  title: 'Desserts',
+                  icon: FontAwesomeIcons.iceCream,
+                  count: dessertsCount,
                   color: Colors.red,
+                  onPressed: (){
+                    Navigator.pushNamed(context, 'DessertsScreen');
+                  },
                 ),
               ],
             ),
@@ -263,7 +271,11 @@ class HomePage extends StatelessWidget {
             ),
           ],
         ),
-      ),
+
+        ),
     );
   }
 }
+
+
+
