@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:seatview/Components/ElevatedButton.dart';
+import 'package:seatview/Main/BookingTime.dart';
 
 class RestaurantBookingScreen extends StatefulWidget {
+  final Map<String, dynamic> restaurant; // Add restaurant parameter
+
+  const RestaurantBookingScreen({required this.restaurant, Key? key})
+      : super(key: key);
+
   @override
   _RestaurantBookingScreenState createState() =>
       _RestaurantBookingScreenState();
 }
+
 
 class _RestaurantBookingScreenState extends State<RestaurantBookingScreen> {
   int? selectedTable; // To keep track of the selected table
@@ -45,6 +53,7 @@ class _RestaurantBookingScreenState extends State<RestaurantBookingScreen> {
             // List of tables
             Expanded(
               child: ListView.builder(
+                physics: const BouncingScrollPhysics(),
                 itemCount: 10, // Example: 10 tables
                 itemBuilder: (context, index) {
                   return GestureDetector(
@@ -76,7 +85,7 @@ class _RestaurantBookingScreenState extends State<RestaurantBookingScreen> {
                           'Table ${index + 1}',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        subtitle: Text('Seats: 4'),
+                        subtitle: const Text('Seats: 4'),
                         trailing: selectedTable == index
                             ? const Icon(
                           Icons.check_circle,
@@ -90,33 +99,48 @@ class _RestaurantBookingScreenState extends State<RestaurantBookingScreen> {
               ),
             ),
 
-            // Book Now Button
-            ElevatedButton(
-              onPressed: selectedTable != null
-                  ? () {
-                // Perform booking logic
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        'Table ${selectedTable! + 1} booked successfully!'),
+            // Options for booking
+            if (selectedTable != null)
+              Column(
+                children: [
+                  CustomElevatedButton(
+                    onPressed: () {
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BookingTime(selectedTable: selectedTable!, isOrder: false, restaurant: widget.restaurant,),
+                          ),
+                        );
+
+
+
+                    },
+                    buttonText: 'Book Only',
                   ),
-                );
-              }
-                  : null, // Disable button if no table is selected
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+
+                  const SizedBox(height: 16),
+
+                  CustomElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BookingTime(selectedTable: selectedTable!, isOrder: true,restaurant: widget.restaurant,),
+                        ),
+                      );
+                      // Logic for booking the table and making an order
+                      /*ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Table ${selectedTable! + 1} booked, proceed to order!'),
+                        ),
+                      );*/
+                    },
+                    buttonText: 'Book and Order',
+                  ),
+
+                ],
               ),
-              child: const Center(
-                child: Text(
-                  'Book Now',
-                  style: TextStyle(fontSize: 18, color: Colors.white),
-                ),
-              ),
-            ),
           ],
         ),
       ),

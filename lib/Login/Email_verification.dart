@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:seatview/Components/component.dart';
-import 'package:seatview/Main/Home_Screen.dart';
+import 'package:seatview/Main/MainScreen.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
   const EmailVerificationScreen({super.key});
@@ -11,6 +11,7 @@ class EmailVerificationScreen extends StatefulWidget {
 }
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
+  // ignore: unused_field
   bool _isVerified = false; // Tracks verification status
   bool _isChecking = false; // Tracks if a check is in progress
 
@@ -46,7 +47,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         );
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => Home_Screen()), // Replace with your home screen
+          MaterialPageRoute(builder: (context) => MainScreen()), // Replace with your home screen
               (route) => false,
         );
       } else {

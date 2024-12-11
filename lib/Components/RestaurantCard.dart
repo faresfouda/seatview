@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:seatview/API/restaurant_list.dart';
+
 
 class RestaurantCard extends StatelessWidget {
   final String imageUrl;
@@ -75,3 +75,14 @@ class RestaurantCard extends StatelessWidget {
     );
   }
 }
+
+List<Map<String, dynamic>> bookedTables = [
+  {
+    'table': 5,
+    'date': DateTime.now(),
+    'time': TimeOfDay(hour: 18, minute: 30),
+    'restaurantName': 'The Fancy Fork',
+    'restaurantImage': 'https://via.placeholder.com/100',
+  }
+];
+

@@ -8,8 +8,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String name = "Mohamed Taify";
-  String phoneNumber = "+20 102 637 2644";
+  String name = "Fares";
+  String phoneNumber = "+20 108979 2644";
 
   @override
   Widget build(BuildContext context) {

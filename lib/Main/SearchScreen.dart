@@ -40,14 +40,14 @@ class _SearchScreenState extends State<SearchScreen> {
         title: TextField(
           controller: _searchController,
           onChanged: _filterRestaurants,
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             hintText: "Search by name, Location, or tag",
             border: InputBorder.none,
           ),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.close, color: Colors.grey),
+            icon: const Icon(Icons.close, color: Colors.grey),
             onPressed: () {
               _searchController.clear();
               _filterRestaurants('');
@@ -56,26 +56,27 @@ class _SearchScreenState extends State<SearchScreen> {
         ],
       ),
       body: filteredList.isEmpty
-          ? Center(
+          ? const Center(
         child: Text(
           'No results found.',
           style: TextStyle(color: Colors.grey, fontSize: 16),
         ),
       )
           : ListView.builder(
+        physics: BouncingScrollPhysics(),
         padding: const EdgeInsets.all(16.0),
         itemCount: filteredList.length,
         itemBuilder: (context, index) {
           final restaurant = filteredList[index];
           return Card(
-            margin: EdgeInsets.only(bottom: 10),
+            margin: const EdgeInsets.only(bottom: 10),
             child: ListTile(
               leading: CircleAvatar(
                 backgroundImage: NetworkImage(restaurant['imageUrl']),
               ),
               title: Text(restaurant['title']),
               subtitle: Text(restaurant['description']),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
               onTap: () {
                 Navigator.pushNamed(
                   context,

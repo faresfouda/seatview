@@ -1,128 +1,68 @@
-import 'package:dynamic_fa_icons/dynamic_fa_icons.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:motion_tab_bar_v2/motion-tab-bar.dart';
-import 'package:motion_tab_bar_v2/motion-tab-controller.dart';
 import 'package:provider/provider.dart';
 import 'package:seatview/API/restaurant_list.dart';
 import 'package:seatview/Components/RestaurantCard.dart';
 import 'package:seatview/Components/bulidcard.dart';
-import 'package:seatview/Main/DashboardScreen.dart';
-import 'package:seatview/Main/DrinksScreen.dart';
 import 'package:seatview/Main/FavoritesProvider.dart';
-import 'package:seatview/Main/ProfileScreen.dart';
-import 'package:seatview/Main/FavouriteScreen.dart';
-import 'package:seatview/Main/RestaurantAboutScreen.dart';
-import 'package:seatview/Main/SearchScreen.dart';
 
-
-
-
-class Home_Screen extends StatefulWidget {
+class HomeScreen extends StatefulWidget {
   @override
-  _HomescreenState createState() => _HomescreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomescreenState extends State<Home_Screen>
-    with SingleTickerProviderStateMixin {
-  MotionTabBarController? _motionTabBarController;
-  final List<Widget> _screens = [
-    DashboardScreen(),
-    HomePage(),
-    FavouriteScreen(),
-    ProfileScreen(),
-  ];
+class _HomeScreenState extends State<HomeScreen> {
 
+  final ScrollController _scrollController = ScrollController();
+  Timer? _timer;
+  int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _motionTabBarController = MotionTabBarController(
-      initialIndex: 1, // Set the initial index to the "Home" tab
-      length: 4, // Number of tabs
-      vsync: this, // Pass the current State object for vsync
-    );
+
+    // Wait until the first frame is rendered before starting the timer
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Start the automatic scrolling every 3 seconds after the page is loaded
+      _timer = Timer.periodic(Duration(seconds: 3), (timer) {
+        _scrollToNextItem();
+      });
+    });
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
+    _timer?.cancel(); // Stop the timer when the widget is disposed
     super.dispose();
-    _motionTabBarController!.dispose(); // Dispose the controller
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: Padding(
-          padding: const EdgeInsets.only(left: 140),
-          child: const Text(
-            'SeatView',
-            style: TextStyle(
-                color: Colors.black,
-                fontSize: 18,
-                fontWeight: FontWeight.bold
-            ),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.red),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => SearchScreen()),
-              );
-            },
-          ),
-        ],
-      ),
-      body: _screens[_motionTabBarController!.index],
-      bottomNavigationBar: MotionTabBar(
-        controller:
-        _motionTabBarController, // Connect to MotionTabBarController
-        initialSelectedTab: "Home", // Initial tab
-        labels: const ["Dashboard", "Home", "favourite", "Profile"],
-        icons: const [
-          Icons.dashboard,
-          Icons.home,
-          Icons.favorite,
-          Icons.account_circle
-        ],
-        tabSize: 50,
-        tabBarHeight: 55,
-        textStyle: const TextStyle(
-          fontSize: 12,
-          color: Colors.black,
-          fontWeight: FontWeight.w500,
-        ),
-        tabIconColor: Colors.red[600],
-        tabIconSize: 28.0,
-        tabIconSelectedSize: 26.0,
-        tabSelectedColor: Colors.red[900],
-        tabIconSelectedColor: Colors.white,
-        tabBarColor: const Color(0xFFAFAFAF),
-        onTabItemSelected: (int value) {
-          setState(() {
-            _motionTabBarController!.index = value; // Update the selected tab
-          });
-        },
-      ),
-    );
+  void _scrollToNextItem() {
+    if (_scrollController.hasClients) {
+      double itemWidth = 390.0;
+      double nextOffset = (_currentIndex + 1 >= restaurantList.length)
+          ? 0
+          : (_currentIndex + 1) * itemWidth;
+
+      // Scroll to the next item
+      _scrollController.animateTo(
+        nextOffset,
+        duration: Duration(seconds: 1),
+        curve: Curves.easeInOut,
+      );
+
+      // Update the index for the next scroll
+      setState(() {
+        _currentIndex = (_currentIndex + 1) % restaurantList.length;
+      });
+    }
   }
-}
 
-
-// Import the RestaurantAboutScreen
-
-
-class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final favoritesProvider = Provider.of<FavoritesProvider>(context);
-    final selectedRestaurant = restaurantList[0];
 
     final drinksCount = restaurantList.where((restaurant) {
       return restaurant['tags'].contains('drinks');
@@ -158,22 +98,41 @@ class HomePage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            RestaurantCard(
-              imageUrl: selectedRestaurant['imageUrl'] as String,
-              title: selectedRestaurant['title'] as String,
-              description: selectedRestaurant['description'] as String,
-              rating: selectedRestaurant['rating'] as double,
-              reviewsCount: 23, // Sample reviews count
-              onFavoritePressed: () {
-                if (favoritesProvider.isFavorite(selectedRestaurant)) {
-                  favoritesProvider.removeFavorite(selectedRestaurant);
-                } else {
-                  favoritesProvider.addFavorite(selectedRestaurant);
-                }
-              },
-              isFavorite: favoritesProvider.isFavorite(selectedRestaurant),
-              restaurant: selectedRestaurant,
+            Container(
+              height: 250, // Set a fixed height to prevent overflow
+              child: ListView.builder(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal, // Set scroll direction to horizontal
+                physics: const BouncingScrollPhysics(),
+                shrinkWrap: true,
+                itemCount: restaurantList.length,
+                itemBuilder: (context, index) {
+                  final restaurant = restaurantList[index];
+                  final isFavorite = favoritesProvider.isFavorite(restaurant);
+
+                  return Container(
+                    width: 380, // Set a fixed width for each item
+                    margin: const EdgeInsets.only(right: 10), // Add some spacing between items
+                    child: SingleChildScrollView(
+                      child: RestaurantCard(
+                        imageUrl: restaurant['imageUrl'] as String,
+                        title: restaurant['title'] as String,
+                        description: restaurant['description'] as String,
+                        rating: restaurant['rating'] as double,
+                        reviewsCount: 23,
+                        onFavoritePressed: () {
+                          favoritesProvider.toggleFavorite(favoritesProvider, restaurant, isFavorite);
+                        },
+                        isFavorite: isFavorite,
+                        restaurant: restaurant,
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
+
+
             const SizedBox(height: 15),
             const Text(
               'Food Categories',
@@ -221,7 +180,7 @@ class HomePage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Popular Items',
+                  'Best View Seats',  // Change the title to reflect the view theme
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 TextButton(
@@ -234,7 +193,7 @@ class HomePage extends StatelessWidget {
             ),
             const SizedBox(height: 10),
 
-            // Example Popular Item
+// Example Best View Seat Item
             Container(
               height: 100,
               decoration: BoxDecoration(
@@ -246,7 +205,7 @@ class HomePage extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.network(
-                      'https://i.pinimg.com/736x/52/1a/01/521a01d28f8bc09a8042ee20a0f6451c.jpg',
+                      'https://i.pinimg.com/736x/4c/51/24/4c51242cfa51bb8c205242739b4bd0c4.jpg',  // Replace with actual image of a table with a great view
                       height: 100,
                       width: 100,
                       fit: BoxFit.cover,
@@ -259,10 +218,10 @@ class HomePage extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Popular Dish',
+                          'Table with Ocean View',  // Update with a descriptive name for the view
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
-                        Text('Description here'),
+                        Text('Perfect spot to enjoy a meal while '),  // Update the description with details about the view
                       ],
                     ),
                   ),
@@ -272,10 +231,7 @@ class HomePage extends StatelessWidget {
           ],
         ),
 
-        ),
+      ),
     );
   }
 }
-
-
-

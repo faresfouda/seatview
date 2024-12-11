@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:seatview/Components/VIPRoomCard.dart';
 import 'package:seatview/Main/RestaurantBookingScreen.dart';
-import 'package:seatview/API/restaurant_list.dart';
 
 class RestaurantAboutScreen extends StatelessWidget {
   final Map<String, dynamic> restaurant;
@@ -18,6 +18,8 @@ class RestaurantAboutScreen extends StatelessWidget {
           bottom: TabBar(
             labelColor: Colors.red[600],
             indicatorColor: Colors.red[600],
+            unselectedLabelColor: Colors.grey, // Change unselected label color
+            indicatorWeight: 3.0, // Adjust the indicator weight
             tabs: const [
               Tab(text: 'About'),
               Tab(text: 'Gallery'),
@@ -60,6 +62,9 @@ class AboutTab extends StatelessWidget {
               height: 200,
               width: double.infinity,
               fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Image.asset('assets/placeholder.png', fit: BoxFit.cover); // Fallback image
+              },
             ),
           ),
           const SizedBox(height: 16),
@@ -79,7 +84,7 @@ class AboutTab extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => RestaurantBookingScreen(),
+                    builder: (context) => RestaurantBookingScreen(restaurant: restaurant),
                   ),
                 );
               },
@@ -93,6 +98,7 @@ class AboutTab extends StatelessWidget {
                 style: TextStyle(fontSize: 18),
               ),
             ),
+
           ),
         ],
       ),
@@ -111,8 +117,9 @@ class GalleryTab extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
+        shrinkWrap: true,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2, // Adjust based on screen width
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
         ),
@@ -123,6 +130,9 @@ class GalleryTab extends StatelessWidget {
             child: Image.network(
               restaurant['galleryImages'][index], // Access gallery images
               fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Image.asset('assets/placeholder.png', fit: BoxFit.cover);
+              },
             ),
           );
         },
@@ -153,6 +163,9 @@ class TablesLocationTab extends StatelessWidget {
             child: Image.network(
               restaurant['layoutImage'], // Use restaurant layout image
               fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Image.asset('assets/placeholder.png', fit: BoxFit.cover);
+              },
             ),
           ),
         ],
@@ -169,46 +182,14 @@ class VIPRoomsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    return ListView.builder(
       padding: const EdgeInsets.all(16.0),
-      children: List.generate(restaurant['vipRooms'].length, (index) {
-        var room = restaurant['vipRooms'][index]; // Access VIP room data
-        return _buildVIPRoomCard(room['name'], room['imageUrl'], room['description']);
-      }),
-    );
-  }
-
-  Widget _buildVIPRoomCard(String title, String imageUrl, String description) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: Image.network(
-              imageUrl,
-              height: 150,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(description),
-              ],
-            ),
-          ),
-        ],
-      ),
+      itemCount: restaurant['vipRooms'].length,
+      itemBuilder: (context, index) {
+        var room = restaurant['vipRooms'][index];
+        return VIPRoomCard(room: room); // Using VIPRoomCard for each room
+      },
     );
   }
 }
+
