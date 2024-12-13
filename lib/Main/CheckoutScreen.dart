@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:seatview/Components/menu_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:seatview/API/DatabaseHelper_BookedTables.dart';
 
 class CheckoutScreen extends StatelessWidget {
   final DateTime selectedDate;
   final TimeOfDay selectedTime;
+  final Map<String, dynamic> restaurant;
 
   const CheckoutScreen({
     required this.selectedDate,
     required this.selectedTime,
+    required this.restaurant,
     Key? key,
   }) : super(key: key);
 
@@ -112,8 +115,24 @@ class CheckoutScreen extends StatelessWidget {
             // Checkout button
             Center(
               child: ElevatedButton(
-                onPressed: () {
-                  // Add your checkout logic here (e.g., payment process)
+                onPressed: () async {
+                  // Prepare order data
+                  final orderDetails = orderedMeals.map((meal) {
+                    return {
+                      'mealName': meal['mealName'],
+                      'price': meal['price'],
+                    };
+                  }).toList();
+
+                  Map<String, dynamic> order = {
+                    'orderDetails': orderDetails.toString(),
+                    'totalAmount': totalCost,
+                  };
+
+                  // Save to database
+                  await DatabaseHelper().insertOrder(order);
+
+                  // Show confirmation dialog
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
@@ -121,12 +140,15 @@ class CheckoutScreen extends StatelessWidget {
                       content: const Text('Thank you for your purchase!'),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () => Navigator.pushNamed(context,'home'),
                           child: const Text('OK'),
                         ),
                       ],
                     ),
                   );
+
+                  // Clear the order in the provider
+                  menuProvider.clearOrder();
                 },
                 child: const Text('Confirm Order'),
                 style: ElevatedButton.styleFrom(
@@ -146,4 +168,3 @@ class CheckoutScreen extends StatelessWidget {
     );
   }
 }
-

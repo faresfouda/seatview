@@ -78,7 +78,10 @@ import 'package:seatview/Main/HomeScreen.dart';
             ),
           ],
         ),
-        body: _screens[_motionTabBarController!.index],
+        body: IndexedStack(
+          index: _motionTabBarController!.index,
+          children: _screens,
+        ),
         bottomNavigationBar: MotionTabBar(
           controller:
           _motionTabBarController, // Connect to MotionTabBarController

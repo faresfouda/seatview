@@ -4,24 +4,21 @@ import 'package:seatview/Components/ElevatedButton.dart';
 import 'package:seatview/Main/RestaurantMenuScreen.dart';
 import 'package:seatview/Main/MainScreen.dart';
 
-List<Map<String, dynamic>> bookedTables = [];
-
 class BookingTime extends StatefulWidget {
   final int selectedTable;
   final bool isOrder;
-  final Map<String, dynamic> restaurant; // Add restaurant parameter
+  final Map<String, dynamic> restaurant;
 
   const BookingTime({
     required this.selectedTable,
     required this.isOrder,
-    required this.restaurant, // Include restaurant in the constructor
+    required this.restaurant,
     Key? key,
   }) : super(key: key);
 
   @override
   _BookingTimeState createState() => _BookingTimeState();
 }
-
 
 class _BookingTimeState extends State<BookingTime> {
   DateTime? _selectedDate;
@@ -43,133 +40,152 @@ class _BookingTimeState extends State<BookingTime> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Table Selection Header
             Text(
-              'You selected Table ${widget.selectedTable + 1}',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              'You have selected Table ${widget.selectedTable + 1}',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
             ),
             const SizedBox(height: 16),
 
-            Row(
-              children: [
-                const Icon(Icons.calendar_today, color: Colors.red),
-                const SizedBox(width: 8),
-                Text(
-                  _selectedDate == null
-                      ? 'Select Date'
-                      : 'Date: ${_selectedDate!.toLocal()}'.split(' ')[0],
-                  style: const TextStyle(fontSize: 18),
-                ),
-                const Spacer(),
-                ElevatedButton(
-                  onPressed: () async {
-                    DateTime today = DateTime.now();
-                    DateTime oneYearLater = today.add(const Duration(days: 365));
-                    DateTime? pickedDate = await showDatePicker(
-                      context: context,
-                      initialDate: today,
-                      firstDate: today,
-                      lastDate: oneYearLater,
-                    );
-
-                    if (pickedDate != null && pickedDate != _selectedDate) {
-                      setState(() {
-                        _selectedDate = pickedDate;
-                      });
-                    }
-                  },
-                  child: const Text('Pick Date'),
-                ),
-              ],
-            ),
+            // Date Selection
+            _buildDateSelector(),
             const SizedBox(height: 16),
 
-            Row(
-              children: [
-                const Icon(Icons.access_time, color: Colors.red),
-                const SizedBox(width: 8),
-                Text(
-                  _selectedTime == null
-                      ? 'Select Time'
-                      : 'Time: ${_selectedTime!.format(context)}',
-                  style: const TextStyle(fontSize: 18),
-                ),
-                const Spacer(),
-                ElevatedButton(
-                  onPressed: () async {
-                    TimeOfDay? pickedTime = await showTimePicker(
-                      context: context,
-                      initialTime: TimeOfDay.now(),
-                    );
-
-                    if (pickedTime != null && pickedTime != _selectedTime) {
-                      setState(() {
-                        _selectedTime = pickedTime;
-                      });
-                    }
-                  },
-                  child: const Text('Pick Time'),
-                ),
-              ],
-            ),
+            // Time Selection
+            _buildTimeSelector(),
             const SizedBox(height: 32),
 
-
-      CustomElevatedButton(
-      buttonText: widget.isOrder ? 'Next' : 'Confirm',
-        onPressed: () async {
-        if (widget.isOrder==false) {
-          if (_selectedDate != null && _selectedTime != null) {
-            Map<String, dynamic> booking = {
-              'tableNumber': widget.selectedTable + 1,
-              'date': _selectedDate!.toIso8601String(),
-              'time': _selectedTime!.format(context),
-              'restaurantName': widget.restaurant['title'],
-              'restaurantImage': widget.restaurant['imageUrl'],
-            };
-
-            await DatabaseHelper().insertBooking(booking);
-
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => MainScreen()),
-                  (Route<dynamic> route) => false,
-            );
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                backgroundColor: Colors.green,
-                content: Text(
-                  'Table ${widget.selectedTable + 1} booked successfully!',
-                ),
-              ),
-            );
-          }
-          else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                backgroundColor: Colors.red,
-                content: const Text('Please select a date and time'),
-              ),
-            );
-          }
-        }else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => RestaurantMenuScreen(
-                restaurant: widget.restaurant,
-                selectedDate: _selectedDate!,
-                selectedTime: _selectedTime!,
-              ),
-            ), // Remove all previous routes
-          );
-        }
-        },
-      ),
-
-      ],
+            // Confirm Booking Button
+            CustomElevatedButton(
+              buttonText: widget.isOrder ? 'Next' : 'Confirm Booking',
+              onPressed: _onBookingConfirm,
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildDateSelector() {
+    return Card(
+      elevation: 5,
+      child: ListTile(
+        leading: const Icon(Icons.calendar_today, color: Colors.red),
+        title: Text(
+          _selectedDate == null
+              ? 'Select Date'
+              : 'Date: ${_selectedDate!.toLocal()}'.split(' ')[0],
+          style: const TextStyle(fontSize: 18),
+        ),
+        trailing: ElevatedButton(
+          onPressed: _pickDate,
+          child: const Text('Pick Date'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeSelector() {
+    return Card(
+      elevation: 5,
+      child: ListTile(
+        leading: const Icon(Icons.access_time, color: Colors.red),
+        title: Text(
+          _selectedTime == null
+              ? 'Select Time'
+              : 'Time: ${_selectedTime!.format(context)}',
+          style: const TextStyle(fontSize: 18),
+        ),
+        trailing: ElevatedButton(
+          onPressed: _pickTime,
+          child: const Text('Pick Time'),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    DateTime today = DateTime.now().add(const Duration(days: 1));
+    DateTime oneYearLater = today.add(const Duration(days: 365));
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: today,
+      firstDate: today,
+      lastDate: oneYearLater,
+    );
+
+    if (pickedDate != null && pickedDate != _selectedDate) {
+      setState(() {
+        _selectedDate = pickedDate;
+      });
+    }
+  }
+
+  Future<void> _pickTime() async {
+    TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (pickedTime != null && pickedTime != _selectedTime) {
+      setState(() {
+        _selectedTime = pickedTime;
+      });
+    }
+  }
+
+  void _onBookingConfirm() async {
+    if (_selectedDate != null && _selectedTime != null) {
+      Map<String, dynamic> booking = {
+        'tableNumber': widget.selectedTable + 1,
+        'date': _selectedDate!.toIso8601String(),
+        'time': _selectedTime!.format(context),
+        'restaurantName': widget.restaurant['title'],
+        'restaurantImage': widget.restaurant['imageUrl'],
+      };
+
+      await DatabaseHelper().insertBooking(booking);
+
+      if (widget.isOrder) {
+        // Navigate to the restaurant menu screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RestaurantMenuScreen(
+              restaurant: widget.restaurant,
+              selectedDate: _selectedDate!,
+              selectedTime: _selectedTime!,
+            ),
+          ),
+        );
+      } else {
+        // Navigate back to main screen and show a confirmation
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => MainScreen()),
+              (Route<dynamic> route) => false,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.green,
+            content: Text(
+              'Table ${widget.selectedTable + 1} booked successfully!',
+            ),
+          ),
+        );
+      }
+    } else {
+      // Show an error if no date or time selected
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: const Text('Please select both date and time'),
+        ),
+      );
+    }
   }
 }

@@ -19,9 +19,9 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'booking.db');
     return await openDatabase(
       path,
-      version: 1,
-      onCreate: (db, version) {
-        return db.execute(''' 
+      version: 2, // Increment the version for the new schema
+      onCreate: (db, version) async {
+        await db.execute(''' 
           CREATE TABLE bookings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             tableNumber INTEGER,
@@ -31,6 +31,30 @@ class DatabaseHelper {
             restaurantImage TEXT
           )
         ''');
+        await db.execute(''' 
+          CREATE TABLE orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tableNumber INTEGER,
+            restaurantName TEXT,
+            orderDetails TEXT,
+            totalAmount REAL,
+            date TEXT
+          )
+        ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(''' 
+            CREATE TABLE orders (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              tableNumber INTEGER,
+              restaurantName TEXT,
+              orderDetails TEXT,
+              totalAmount REAL,
+              date TEXT
+            )
+          ''');
+        }
       },
     );
   }
@@ -40,14 +64,35 @@ class DatabaseHelper {
     return await db.insert('bookings', booking);
   }
 
+  Future<int> insertOrder(Map<String, dynamic> order) async {
+    final db = await database;
+    return await db.insert('orders', order);
+  }
+
   Future<List<Map<String, dynamic>>> getBookings() async {
     final db = await database;
     return await db.query('bookings');
   }
 
+  Future<List<Map<String, dynamic>>> getOrders() async {
+    final db = await database;
+    return await db.query('orders');
+  }
+
   Future<void> deleteBooking(int id) async {
     final db = await database;
-    await db.delete('bookings', where: 'id = ?', whereArgs: [id]); // Corrected table name
+    await db.delete('bookings', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteOrder(int id) async {
+    final db = await database;
+    await db.delete('orders', where: 'id = ?', whereArgs: [id]);
+  }
+  Future<void> deleteAllOrders() async {
+    final db = await database;
+    await db.delete('orders');
   }
 }
+
+
 

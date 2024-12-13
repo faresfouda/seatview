@@ -23,6 +23,43 @@ class RestaurantMenuScreen extends StatefulWidget {
 }
 
 class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> with SingleTickerProviderStateMixin {
+  void _showMealDetails(Map meal) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(meal['mealName']),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.network(meal['mealImage'],
+              height: 300,),
+              const SizedBox(height: 8),
+              Text('Price: ${meal['price']} L.E',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,),
+              ),
+              Text('Details: ${meal['description']}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,)
+                ,)
+              // Add more details if necessary
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
   late TabController _tabController;
 
   @override
@@ -81,6 +118,7 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> with Single
                   menuProvider.addToOrder(meal);
                 },
                   mealPrice: meal['price'] ?? 0.0,
+                  onTap: () => _showMealDetails(meal),
                 );
               },
             );
@@ -103,6 +141,7 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> with Single
                 onFavoriteToggle: () => menuProvider.toggleFavorite(meal),
                 onAddToOrder: () => menuProvider.addToOrder(meal['price'] ?? 0.0),
                 mealPrice: meal['price'] ?? 0.0,
+                onTap: () => _showMealDetails(meal),
               );
             },
           ),
@@ -119,6 +158,7 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> with Single
                 builder: (context) => CheckoutScreen(
                   selectedDate: widget.selectedDate,
                   selectedTime: widget.selectedTime,
+                  restaurant:widget.restaurant,
                 ),
               ),
             );
