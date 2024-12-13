@@ -34,27 +34,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadBookings(); // Refresh the list after deletion
     _loadorderBookings();
   }
+
+
+
+
   String _formatOrderDetails(dynamic details) {
+    if (details is String) {
+      // Ensure both keys and values are properly quoted
+      details = details.replaceAll("'", '"').replaceAllMapped(
+          RegExp(r'(\w+): ([^,}]+)'),
+              (match) => '"${match[1]}": "${match[2]!.replaceAll('"', '').trim()}"'
+      );
+      try {
+        details = jsonDecode(details);
+      } catch (e) {
+        print('Error decoding JSON: $e');
+        return 'Invalid order details format';
+      }
+    }
+
     if (details is List) {
-      Map<String, int> mealCount = {};
+      Map<String, Map<String, dynamic>> mealCount = {};
 
       for (var item in details) {
         String mealName = item['mealName'];
+        double price = item['price'] is String ? double.tryParse(item['price']) ?? 0.0 : item['price'];
         if (mealCount.containsKey(mealName)) {
-          mealCount[mealName] = mealCount[mealName]! + 1;
+          mealCount[mealName]!['count']++;
+          mealCount[mealName]!['totalPrice'] += price;
         } else {
-          mealCount[mealName] = 1;
+          mealCount[mealName] = {'count': 1, 'totalPrice': price};
         }
       }
 
       return mealCount.entries
-          .map((entry) => '${entry.value} x ${entry.key}: \$${details.firstWhere((item) => item['mealName'] == entry.key)['price']}')
+          .map((entry) => '${entry.value['count']} x ${entry.key}: \$${entry.value['totalPrice'].toStringAsFixed(2)}')
           .join(', ');
     } else {
       return 'Invalid order details format';
     }
   }
-
 
 
 
