@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:seatview/API/DatabaseHelper_BookedTables.dart';
@@ -10,40 +9,34 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  List<Map<String, dynamic>> bookings = [];
-  List<Map<String, dynamic>> orders = [];
+  List<Map<String, dynamic>> bookingsOrders = [];
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _loadBookings();
-    _loadorderBookings();
+    _loadBookingsOrders();
   }
 
-  Future<void> _loadBookings() async {
-    bookings = await DatabaseHelper().getBookings();
-    setState(() {});
-  }
-  Future<void> _loadorderBookings() async {
-    orders = await DatabaseHelper().getOrders();
+  Future<void> _loadBookingsOrders() async {
+    bookingsOrders = await DatabaseHelper().getBookingsOrders();
     setState(() {});
   }
 
-  Future<void> _removeBooking(int id) async {
-    await DatabaseHelper().deleteBooking(id);
-    _loadBookings(); // Refresh the list after deletion
-    _loadorderBookings();
+  Future<void> _removeBookingOrder(int id) async {
+    await DatabaseHelper().deleteBookingOrder(id);
+    _loadBookingsOrders(); // Refresh the list after deletion
   }
-
-
-
 
   String _formatOrderDetails(dynamic details) {
+    if (details == null) {
+      return 'Invalid order details format';
+    }
+
     if (details is String) {
       // Ensure both keys and values are properly quoted
       details = details.replaceAll("'", '"').replaceAllMapped(
           RegExp(r'(\w+): ([^,}]+)'),
-              (match) => '"${match[1]}": "${match[2]!.replaceAll('"', '').trim()}"'
+              (match) => '"${match[1]}": "${match[2]?.replaceAll('"', '').trim()}"'
       );
       try {
         details = jsonDecode(details);
@@ -75,29 +68,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-
-
-
-
   // Function to show booking details in an alert dialog
-  void _showBookingDetails(Map<String, dynamic> booking, Map<String, dynamic> order) {
+  void _showBookingDetails(Map<String, dynamic> bookingOrder) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(booking['restaurantName'] ?? 'Unknown Restaurant'),
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.network(booking['restaurantImage']),
-              const SizedBox(height: 16),
-              Text('Table: ${booking['tableNumber']}'),
-              Text('Date: ${DateFormat('yyyy-MM-dd').format(DateTime.parse(booking['date']))}'),
-              Text('Time: ${booking['time']}'),
-              Text('Order Details: ${_formatOrderDetails(order['orderDetails'])}'),
-              Text('Cost: \$${order['totalAmount']}'),
-            ],
+          title: Text(
+            bookingOrder['restaurantName'] ?? 'Unknown Restaurant',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (bookingOrder['restaurantImage'] != null && bookingOrder['restaurantImage'].isNotEmpty) ...[
+                  Image.network(
+                    bookingOrder['restaurantImage'],
+                    errorBuilder: (context, error, stackTrace) {
+                      return Text('Failed to load image');
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                Row(
+                  children: [
+                    Icon(Icons.table_chart),
+                    const SizedBox(width: 8),
+                    Text('Table: ${bookingOrder['tableNumber']}'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.date_range),
+                    const SizedBox(width: 8),
+                    Text('Date: ${DateFormat('yyyy-MM-dd').format(DateTime.parse(bookingOrder['date']))}'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.access_time),
+                    const SizedBox(width: 8),
+                    Text('Time: ${bookingOrder['time']}'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.receipt),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text('Order Details: ${_formatOrderDetails(bookingOrder['orderDetails'])}'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.attach_money),
+                    const SizedBox(width: 8),
+                    Text('Cost: \$${bookingOrder['totalAmount']}'),
+                  ],
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -110,22 +147,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: bookings.isEmpty
+      body: bookingsOrders.isEmpty
           ? const Center(child: Text('No bookings found'))
           : ListView.builder(
-        itemCount: bookings.length,
+        itemCount: bookingsOrders.length,
         itemBuilder: (context, index) {
-          var booking = bookings[index];
-          var order = orders[index];
+          var bookingOrder = bookingsOrders[index];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: InkWell(
-              onTap: () => _showBookingDetails(booking,order), // Show details in an alert dialog
+              onTap: () => _showBookingDetails(bookingOrder), // Show details in an alert dialog
               child: Card(
                 elevation: 5,
                 shape: RoundedRectangleBorder(
@@ -141,11 +175,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           topLeft: Radius.circular(12),
                           bottomLeft: Radius.circular(12),
                         ),
-                        child: Image.network(
-                          booking['restaurantImage'],
+                        child: bookingOrder['restaurantImage'] != null && bookingOrder['restaurantImage'].isNotEmpty
+                            ? Image.network(
+                          bookingOrder['restaurantImage'],
                           width: 100,
                           height: 100,
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Text('Failed to load image');
+                          },
+                        )
+                            : Container(
+                          width: 100,
+                          height: 100,
+                          color: Colors.grey,
+                          child: Icon(Icons.error),
                         ),
                       ),
                     ),
@@ -156,23 +200,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              booking['restaurantName'] ?? 'Unknown',
+                              bookingOrder['restaurantName'] ?? 'Unknown',
                               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Table: ${booking['tableNumber']}',
+                              'Table: ${bookingOrder['tableNumber']}',
                               style: const TextStyle(fontSize: 16),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Date: ${DateFormat('yyyy-MM-dd').format(DateTime.parse(booking['date']))}',
+                              'Date: ${DateFormat('yyyy-MM-dd').format(DateTime.parse(bookingOrder['date']))}',
                               style: const TextStyle(fontSize: 14, color: Colors.grey),
                             ),
                             Text(
-                              'Time: ${booking['time']}',
+                              'Time: ${bookingOrder['time']}',
                               style: const TextStyle(fontSize: 14, color: Colors.grey),
                             ),
+                            if (bookingOrder['orderDetails'] != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Order Details: ${_formatOrderDetails(bookingOrder['orderDetails'])}',
+                                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Cost: \$${bookingOrder['totalAmount']}',
+                                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -201,20 +257,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         );
 
                         if (confirm == true) {
-                          await _removeBooking(booking['id']);
+                          await _removeBookingOrder(bookingOrder['id']);
                         }
                       },
                     ),
                   ],
                 ),
-
               ),
             ),
-
           );
         },
       ),
-
     );
   }
 }

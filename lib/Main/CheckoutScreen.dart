@@ -1,8 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:seatview/Components/menu_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:seatview/API/DatabaseHelper_BookedTables.dart';
+import 'package:seatview/Components/menu_provider.dart';
 
 class CheckoutScreen extends StatelessWidget {
   final DateTime selectedDate;
@@ -124,13 +126,14 @@ class CheckoutScreen extends StatelessWidget {
                     };
                   }).toList();
 
-                  Map<String, dynamic> order = {
-                    'orderDetails': orderDetails.toString(),
+                  Map<String, dynamic> bookingOrder = {
+
+                    'orderDetails': jsonEncode(orderDetails),
                     'totalAmount': totalCost,
                   };
 
                   // Save to database
-                  await DatabaseHelper().insertOrder(order);
+                  await DatabaseHelper().updateBookingOrder(bookingOrder);
 
                   // Show confirmation dialog
                   showDialog(
@@ -140,7 +143,7 @@ class CheckoutScreen extends StatelessWidget {
                       content: const Text('Thank you for your purchase!'),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.pushNamed(context,'home'),
+                          onPressed: () => Navigator.pushNamed(context, 'home'),
                           child: const Text('OK'),
                         ),
                       ],

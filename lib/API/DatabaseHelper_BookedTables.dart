@@ -19,7 +19,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'booking.db');
     return await openDatabase(
       path,
-      version: 2, // Increment the version for the new schema
+      version: 3,
       onCreate: (db, version) async {
         await db.execute(''' 
           CREATE TABLE bookings (
@@ -41,17 +41,31 @@ class DatabaseHelper {
             date TEXT
           )
         ''');
+        await db.execute(''' 
+          CREATE TABLE bookings_orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tableNumber INTEGER,
+            date TEXT,
+            time TEXT,
+            restaurantName TEXT,
+            restaurantImage TEXT,
+            orderDetails TEXT,
+            totalAmount REAL
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
+        if (oldVersion < 3) {
           await db.execute(''' 
-            CREATE TABLE orders (
+            CREATE TABLE bookings_orders (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               tableNumber INTEGER,
+              date TEXT,
+              time TEXT,
               restaurantName TEXT,
+              restaurantImage TEXT,
               orderDetails TEXT,
-              totalAmount REAL,
-              date TEXT
+              totalAmount REAL
             )
           ''');
         }
@@ -59,40 +73,33 @@ class DatabaseHelper {
     );
   }
 
-  Future<int> insertBooking(Map<String, dynamic> booking) async {
+  Future<int> insertBookingOrder(Map<String, dynamic> bookingOrder) async {
     final db = await database;
-    return await db.insert('bookings', booking);
+    return await db.insert('bookings_orders', bookingOrder);
   }
 
-  Future<int> insertOrder(Map<String, dynamic> order) async {
+  Future<int> updateBookingOrder(Map<String, dynamic> bookingOrder) async {
     final db = await database;
-    return await db.insert('orders', order);
+    return await db.update(
+      'bookings_orders',
+      bookingOrder,
+      where: 'id = ?',
+      whereArgs: [bookingOrder['id']],
+    );
   }
 
-  Future<List<Map<String, dynamic>>> getBookings() async {
+  Future<List<Map<String, dynamic>>> getBookingsOrders() async {
     final db = await database;
-    return await db.query('bookings');
+    return await db.query('bookings_orders');
   }
 
-  Future<List<Map<String, dynamic>>> getOrders() async {
+  Future<void> deleteBookingOrder(int id) async {
     final db = await database;
-    return await db.query('orders');
+    await db.delete('bookings_orders', where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<void> deleteBooking(int id) async {
+  Future<void> deleteAllBookingOrders() async {
     final db = await database;
-    await db.delete('bookings', where: 'id = ?', whereArgs: [id]);
-  }
-
-  Future<void> deleteOrder(int id) async {
-    final db = await database;
-    await db.delete('orders', where: 'id = ?', whereArgs: [id]);
-  }
-  Future<void> deleteAllOrders() async {
-    final db = await database;
-    await db.delete('orders');
+    await db.delete('bookings_orders');
   }
 }
-
-
-

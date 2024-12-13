@@ -140,15 +140,17 @@ class _BookingTimeState extends State<BookingTime> {
 
   void _onBookingConfirm() async {
     if (_selectedDate != null && _selectedTime != null) {
-      Map<String, dynamic> booking = {
+      Map<String, dynamic> bookingOrder = {
         'tableNumber': widget.selectedTable + 1,
         'date': _selectedDate!.toIso8601String(),
         'time': _selectedTime!.format(context),
         'restaurantName': widget.restaurant['title'],
         'restaurantImage': widget.restaurant['imageUrl'],
+        'orderDetails': null,
+        'totalAmount': null,
       };
 
-      await DatabaseHelper().insertBooking(booking);
+      await DatabaseHelper().insertBookingOrder(bookingOrder);
 
       if (widget.isOrder) {
         // Navigate to the restaurant menu screen
