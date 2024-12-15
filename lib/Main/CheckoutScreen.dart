@@ -127,13 +127,17 @@ class CheckoutScreen extends StatelessWidget {
                   }).toList();
 
                   Map<String, dynamic> bookingOrder = {
-
+                    'tableNumber': restaurant['tableNumber'],
+                    'date': selectedDate.toIso8601String(),
+                    'time': selectedTime.format(context),
+                    'restaurantName': restaurant['name'],
+                    'restaurantImage': restaurant['image'],
                     'orderDetails': jsonEncode(orderDetails),
                     'totalAmount': totalCost,
                   };
 
                   // Save to database
-                  await DatabaseHelper().updateBookingOrder(bookingOrder);
+                  await DatabaseHelper().insertBookingOrder(bookingOrder);
 
                   // Show confirmation dialog
                   showDialog(

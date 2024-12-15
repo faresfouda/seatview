@@ -1,13 +1,7 @@
   import 'package:flutter/material.dart';
-  import 'package:font_awesome_flutter/font_awesome_flutter.dart';
   import 'package:motion_tab_bar_v2/motion-tab-bar.dart';
   import 'package:motion_tab_bar_v2/motion-tab-controller.dart';
-  import 'package:provider/provider.dart';
-  import 'package:seatview/API/restaurant_list.dart';
-  import 'package:seatview/Components/RestaurantCard.dart';
-  import 'package:seatview/Components/bulidcard.dart';
   import 'package:seatview/Main/DashboardScreen.dart';
-  import 'package:seatview/Main/FavoritesProvider.dart';
 import 'package:seatview/Main/HomeScreen.dart';
   import 'package:seatview/Main/ProfileScreen.dart';
   import 'package:seatview/Main/FavouriteScreen.dart';

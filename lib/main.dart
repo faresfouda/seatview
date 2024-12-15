@@ -15,7 +15,6 @@ import 'package:seatview/Main/MainScreen.dart';
 import 'package:seatview/Main/MealsScreen.dart';
 import 'package:seatview/Main/ProfileScreen.dart';
 import 'package:seatview/Main/RestaurantAboutScreen.dart';
-import 'package:seatview/Main/RestaurantBookingScreen.dart';
 import 'package:seatview/Main/RestaurantsScreen.dart';
 
 void main() async {
