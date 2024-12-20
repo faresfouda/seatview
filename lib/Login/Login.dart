@@ -1,6 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:seatview/API/auth_service.dart';
 import 'package:seatview/Components/component.dart';
+import 'package:seatview/model/user.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,7 +14,11 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>(); // Key for the form
+  final _formKey = GlobalKey<FormState>();
+
+  bool _isLoading = false; // State to show CircularProgressIndicator
+
+  final AuthService _authService = AuthService(); // Instance of AuthService
 
   @override
   void dispose() {
@@ -21,34 +27,117 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _checkSession(); // Check if user is already logged in
+  }
+
+  Future<void> _checkSession() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    await userProvider.checkUserSession();
+
+    if (userProvider.isLoggedIn) {
+      final user = userProvider.user;
+
+      // Check if the account is confirmed
+      if (user != null && !user.isConfirmed) {
+        DefaultSnackbar.show(
+          context,
+          'Your account is not confirmed. Please verify your email.',
+          backgroundColor: Colors.orange,
+        );
+        // Navigate to email verification screen if needed
+        return;
+      }
+
+      // Navigate to home screen if confirmed
+      Navigator.pushReplacementNamed(context, 'home');
+    }
+  }
+
+
   Future<void> _login() async {
-    if (_formKey.currentState?.validate() ?? false) { // Validate the form
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isLoading = true; // Show loading spinner
+      });
+
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
 
       try {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
+        // Call the login API method
+        final response = await _authService.login(
           email: email,
           password: password,
         );
-        Navigator.pushReplacementNamed(context, 'home'); // Navigate to home after login
-      } on FirebaseAuthException catch (e) {
-        DefaultSnackbar.show(context, _getErrorMessage(e),
-            backgroundColor: Colors.red);
+
+        setState(() {
+          _isLoading = false; // Hide loading spinner
+        });
+
+        // Check if the response is successful
+        if (response['success']) {
+          final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+          if (response['user'] != null) {
+            final user = UserModel.fromJson(response['user']);
+
+            // Check if the account is confirmed
+            if (!user.isConfirmed) {
+              Navigator.pushNamed(context, 'verification');
+              DefaultSnackbar.show(
+                context,
+                'Your account is not confirmed. Please verify your email.',
+                backgroundColor: Colors.orange,
+              );
+              return; // Exit early if account is not confirmed
+            }
+
+            userProvider.setUserData(
+              user,
+              response['token'] ?? '', // Provide a fallback for null token
+            );
+
+            DefaultSnackbar.show(
+              context,
+              response['message'] ?? "Login successful",
+              backgroundColor: Colors.green,
+            );
+
+            // Navigate to the home page
+            Navigator.pushReplacementNamed(context, 'home');
+          } else {
+            DefaultSnackbar.show(
+              context,
+              'User data is missing.',
+              backgroundColor: Colors.red,
+            );
+          }
+        } else {
+          DefaultSnackbar.show(
+            context,
+            response['message'] ?? "Login failed",
+            backgroundColor: Colors.red,
+          );
+        }
+      } catch (e) {
+        setState(() {
+          _isLoading = false; // Hide loading spinner in case of an error
+        });
+
+        // Handle errors gracefully
+        print("Login failed: $e");
+        DefaultSnackbar.show(
+          context,
+          'An error occurred. Please try again later.',
+          backgroundColor: Colors.red,
+        );
       }
     }
   }
 
-  String _getErrorMessage(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'user-not-found':
-        return 'No user found for that email.';
-      case 'wrong-password':
-        return 'Incorrect password.';
-      default:
-        return 'An error occurred. Please try again.';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(50),
                 ),
                 child: Form(
-                  key: _formKey, // Assign the form key
+                  key: _formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -115,7 +204,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
                       const SizedBox(height: 30),
-                      DefaultElevatedButton(
+                      _isLoading
+                          ? const CircularProgressIndicator(
+                        color: Colors.white,
+                      )
+                          : DefaultElevatedButton(
                         onPressed: _login,
                         label: "LOGIN",
                       ),

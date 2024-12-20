@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'dart:convert';
 import 'package:seatview/Components/component.dart';
 import 'package:seatview/Main/MainScreen.dart';
+import 'package:seatview/model/user.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
   const EmailVerificationScreen({super.key});
@@ -11,47 +14,52 @@ class EmailVerificationScreen extends StatefulWidget {
 }
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
-  // ignore: unused_field
   bool _isVerified = false; // Tracks verification status
   bool _isChecking = false; // Tracks if a check is in progress
-
-  Future<void> _sendVerificationEmail() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      await user?.sendEmailVerification();
-      DefaultSnackbar.show(context, "Verification email sent.");
-    } catch (e) {
-      DefaultSnackbar.show(
-        context,
-        "Error sending verification email: $e",
-        backgroundColor: Colors.red,
-      );
-    }
-  }
 
   Future<void> _checkVerificationStatus() async {
     setState(() => _isChecking = true); // Show a loader while checking
     try {
-      // Reload the user state
-      await FirebaseAuth.instance.currentUser?.reload();
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.user;
+      // Get the current user's email (assuming you are storing it in the user session or context)
+      final String email = user?.email ?? ''; // Default value if null
+      // Replace this with actual user email logic
 
-      // Get the updated user
-      final updatedUser = FirebaseAuth.instance.currentUser;
+      // Make the API call to check email verification status
+      final response = await http.get(
+        Uri.parse('https://restaurant-reservation-sys.vercel.app/users/verify-status?email=$email'),
+      );
 
-      if (updatedUser != null && updatedUser.emailVerified) {
-        setState(() => _isVerified = true);
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        if (responseData['status'] == 'success' && responseData['isConfirmed'] == true) {
+          setState(() {
+            _isVerified = true;
+          });
+          DefaultSnackbar.show(
+            context,
+            "Email verified successfully!",
+            backgroundColor: Colors.green,
+          );
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => MainScreen()), // Replace with your home screen
+                (route) => false,
+          );
+        } else {
+          DefaultSnackbar.show(
+            context,
+            responseData['message'] ?? "Email not verified yet.",
+            backgroundColor: Colors.orange,
+          );
+        }
+      } else {
         DefaultSnackbar.show(
           context,
-          "Email verified successfully!",
-          backgroundColor: Colors.green,
+          "Failed to check email verification status.",
+          backgroundColor: Colors.red,
         );
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => MainScreen()), // Replace with your home screen
-              (route) => false,
-        );
-      } else {
-        DefaultSnackbar.show(context, "Email not verified yet. Please try again.");
       }
     } catch (e) {
       DefaultSnackbar.show(
@@ -59,6 +67,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         "Error checking verification status: $e",
         backgroundColor: Colors.red,
       );
+      print(e);
     } finally {
       setState(() => _isChecking = false); // Hide the loader
     }
@@ -111,11 +120,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                         onPressed: _checkVerificationStatus,
                         label: "Check Verification Status",
                       ),
-                    const SizedBox(height: 20),
-                    DefaultElevatedButton(
-                      onPressed: _sendVerificationEmail,
-                      label: "Resend Verification Email",
-                    ),
                     const SizedBox(height: 20),
                     DefaultTextButton(
                       onPressed: () {

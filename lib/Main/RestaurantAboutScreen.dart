@@ -4,22 +4,27 @@ import 'package:seatview/Main/RestaurantBookingScreen.dart';
 
 class RestaurantAboutScreen extends StatelessWidget {
   final Map<String, dynamic> restaurant;
+  final int initialTabIndex; // Added parameter to accept initial tab index
 
-  // Constructor to accept restaurant data
-  const RestaurantAboutScreen({required this.restaurant});
+  // Constructor to accept restaurant data and initial tab index
+  const RestaurantAboutScreen({
+    required this.restaurant,
+    required this.initialTabIndex,  // New parameter for initial tab index
+  });
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 4,
+      initialIndex: initialTabIndex,  // Set the initial index of the tab to the passed value
       child: Scaffold(
         appBar: AppBar(
           title: Text('${restaurant['title']} Details'),
           bottom: TabBar(
             labelColor: Colors.red[600],
             indicatorColor: Colors.red[600],
-            unselectedLabelColor: Colors.grey, // Change unselected label color
-            indicatorWeight: 3.0, // Adjust the indicator weight
+            unselectedLabelColor: Colors.grey,
+            indicatorWeight: 3.0,
             tabs: const [
               Tab(text: 'About'),
               Tab(text: 'Gallery'),
@@ -31,15 +36,17 @@ class RestaurantAboutScreen extends StatelessWidget {
         body: TabBarView(
           children: [
             AboutTab(restaurant: restaurant),
-            GalleryTab(restaurant: restaurant), // Pass restaurant to GalleryTab
-            TablesLocationTab(restaurant: restaurant), // Pass restaurant to TablesLocationTab
-            VIPRoomsTab(restaurant: restaurant), // Pass restaurant to VIPRoomsTab
+            GalleryTab(restaurant: restaurant),
+            TablesLocationTab(restaurant: restaurant),
+            VIPRoomsTab(restaurant: restaurant),
           ],
         ),
       ),
     );
   }
 }
+
+
 
 // About Tab
 class AboutTab extends StatelessWidget {

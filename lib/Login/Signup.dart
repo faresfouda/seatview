@@ -1,6 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:seatview/API/auth_service.dart';
 import 'package:seatview/Components/component.dart';
+import 'package:seatview/model/user.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -13,9 +15,11 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-  TextEditingController();
-  final _formKey = GlobalKey<FormState>(); // Key for the form
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -23,46 +27,77 @@ class _SignupScreenState extends State<SignupScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _phoneController.dispose();
     super.dispose();
+  }
+
+  bool _isEmailValid(String email) {
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+    return emailRegex.hasMatch(email);
   }
 
   Future<void> _signUp() async {
     if (_formKey.currentState?.validate() ?? false) {
-      final email = _emailController.text.trim();
-      final password = _passwordController.text.trim();
-
-      if (password != _confirmPasswordController.text.trim()) {
-        DefaultSnackbar.show(context, "Passwords do not match",
-            backgroundColor: Colors.red);
-        return;
-      }
+      setState(() {
+        _isLoading = true;
+      });
 
       try {
-        final credential =
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        final fullName = _fullNameController.text.trim();
+        final email = _emailController.text.trim();
+        final password = _passwordController.text.trim();
+        final confirmPassword = _confirmPasswordController.text.trim();
+        final phone = _phoneController.text.trim();
+
+        if (password != confirmPassword) {
+          DefaultSnackbar.show(
+            context,
+            "Passwords do not match",
+            backgroundColor: Colors.red,
+          );
+          return;
+        }
+
+        final authService = AuthService();
+        final response = await authService.signUp(
+          fullName: fullName,
           email: email,
           password: password,
+          phone: phone,
         );
-        await credential.user?.sendEmailVerification();
-        DefaultSnackbar.show(
-            context, "Verification email sent. Please verify your email.",
-            backgroundColor: Colors.green);
-        Navigator.pushReplacementNamed(context, 'verification');
-      } on FirebaseAuthException catch (e) {
-        DefaultSnackbar.show(context, _getErrorMessage(e),
-            backgroundColor: Colors.red);
-      }
-    }
-  }
 
-  String _getErrorMessage(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'weak-password':
-        return 'The password provided is too weak.';
-      case 'email-already-in-use':
-        return 'The account already exists for that email.';
-      default:
-        return 'An error occurred. Please try again.';
+        if (response['success']) {
+          final userProvider = Provider.of<UserProvider>(context, listen: false);
+          final token = response['token'] ?? '';
+          userProvider.setUserData(UserModel.fromJson(response['user']), token);
+
+          DefaultSnackbar.show(
+            context,
+            response['message'] ?? 'Sign-up successful!',
+            backgroundColor: Colors.green,
+          );
+
+          // Navigate to verification screen after a slight delay
+          await Future.delayed(const Duration(seconds: 1));
+          Navigator.pushReplacementNamed(context, 'verification');
+        } else {
+          DefaultSnackbar.show(
+            context,
+            response['message'] ?? 'An error occurred',
+            backgroundColor: Colors.red,
+          );
+        }
+      } catch (e) {
+        DefaultSnackbar.show(
+          context,
+          'Sign-up failed: $e',
+          backgroundColor: Colors.red,
+        );
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -72,7 +107,6 @@ class _SignupScreenState extends State<SignupScreen> {
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          // Background Image
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
@@ -81,7 +115,6 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
             ),
           ),
-          // Form Container
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
@@ -92,7 +125,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   borderRadius: BorderRadius.circular(50),
                 ),
                 child: Form(
-                  key: _formKey, // Assign the form key
+                  key: _formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -110,12 +143,8 @@ class _SignupScreenState extends State<SignupScreen> {
                         controller: _fullNameController,
                         text: "Full Name",
                         obscure_value: false,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your full name';
-                          }
-                          return null;
-                        },
+                        validator: (value) =>
+                        value == null || value.isEmpty ? 'Please enter your full name' : null,
                       ),
                       const SizedBox(height: 20),
                       DefaultTextField(
@@ -126,7 +155,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your email';
                           }
-                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                          if (!_isEmailValid(value)) {
                             return 'Please enter a valid email';
                           }
                           return null;
@@ -152,18 +181,23 @@ class _SignupScreenState extends State<SignupScreen> {
                         controller: _confirmPasswordController,
                         text: "Confirm Password",
                         obscure_value: true,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please confirm your password';
-                          }
-                          if (value != _passwordController.text.trim()) {
-                            return 'Passwords do not match';
-                          }
-                          return null;
-                        },
+                        validator: (value) =>
+                        value != _passwordController.text.trim()
+                            ? 'Passwords do not match'
+                            : null,
+                      ),
+                      const SizedBox(height: 20),
+                      DefaultTextField(
+                        controller: _phoneController,
+                        text: "Phone number",
+                        obscure_value: false,
+                        validator: (value) =>
+                        value == null || value.isEmpty ? 'Please enter your phone number' : null,
                       ),
                       const SizedBox(height: 30),
-                      DefaultElevatedButton(
+                      _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : DefaultElevatedButton(
                         onPressed: _signUp,
                         label: "SIGN UP",
                       ),

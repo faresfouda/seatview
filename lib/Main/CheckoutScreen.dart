@@ -10,11 +10,13 @@ class CheckoutScreen extends StatelessWidget {
   final DateTime selectedDate;
   final TimeOfDay selectedTime;
   final Map<String, dynamic> restaurant;
+  final int selectedTable;
 
   const CheckoutScreen({
     required this.selectedDate,
     required this.selectedTime,
     required this.restaurant,
+    required this.selectedTable,
     Key? key,
   }) : super(key: key);
 
@@ -127,11 +129,11 @@ class CheckoutScreen extends StatelessWidget {
                   }).toList();
 
                   Map<String, dynamic> bookingOrder = {
-                    'tableNumber': restaurant['tableNumber'],
+                    'tableNumber': selectedTable + 1,
                     'date': selectedDate.toIso8601String(),
                     'time': selectedTime.format(context),
-                    'restaurantName': restaurant['name'],
-                    'restaurantImage': restaurant['image'],
+                    'restaurantName': restaurant['title'],
+                    'restaurantImage': restaurant['imageUrl'],
                     'orderDetails': jsonEncode(orderDetails),
                     'totalAmount': totalCost,
                   };
@@ -147,8 +149,13 @@ class CheckoutScreen extends StatelessWidget {
                       content: const Text('Thank you for your purchase!'),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.pushNamed(context, 'home'),
-                          child: const Text('OK'),
+                          onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    'home',
+                        (Route<dynamic> route) => false, // This ensures all previous routes are removed
+                  ),
+
+                  child: const Text('OK'),
                         ),
                       ],
                     ),

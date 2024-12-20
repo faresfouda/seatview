@@ -9,11 +9,13 @@ class RestaurantMenuScreen extends StatefulWidget {
   final Map<String, dynamic> restaurant;
   final DateTime selectedDate;
   final TimeOfDay selectedTime;
+  final int selectedTable;
 
   const RestaurantMenuScreen({
     required this.restaurant,
     required this.selectedDate,
     required this.selectedTime,
+    required this.selectedTable,
     Key? key,
   }) : super(key: key);
 
@@ -158,6 +160,7 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> with Single
                   selectedDate: widget.selectedDate,
                   selectedTime: widget.selectedTime,
                   restaurant:widget.restaurant,
+                  selectedTable: widget.selectedTable,
                 ),
               ),
             );

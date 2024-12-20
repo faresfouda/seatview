@@ -46,7 +46,9 @@ import 'package:seatview/Main/HomeScreen.dart';
     @override
     Widget build(BuildContext context) {
       return Scaffold(
-        appBar: AppBar(
+        appBar: _motionTabBarController!.index == 2 || _motionTabBarController!.index == 3
+            ? null // Hide the AppBar for tabs with index 2 and 3
+            : AppBar(
           elevation: 0,
           backgroundColor: Colors.white,
           title: Padding(
@@ -77,8 +79,7 @@ import 'package:seatview/Main/HomeScreen.dart';
           children: _screens,
         ),
         bottomNavigationBar: MotionTabBar(
-          controller:
-          _motionTabBarController, // Connect to MotionTabBarController
+          controller: _motionTabBarController, // Connect to MotionTabBarController
           initialSelectedTab: "Home", // Initial tab
           labels: const ["Dashboard", "Home", "favourite", "Profile"],
           icons: const [
@@ -108,6 +109,7 @@ import 'package:seatview/Main/HomeScreen.dart';
         ),
       );
     }
+
   }
 
 

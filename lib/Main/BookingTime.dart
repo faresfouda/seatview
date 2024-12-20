@@ -149,6 +149,7 @@ class _BookingTimeState extends State<BookingTime> {
               restaurant: widget.restaurant,
               selectedDate: _selectedDate!,
               selectedTime: _selectedTime!,
+              selectedTable: widget.selectedTable,
             ),
           ),
         );
