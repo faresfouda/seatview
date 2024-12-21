@@ -252,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: Image.network(
-                                firstImage, // Use the first image from galleryImages
+                                'https://i.pinimg.com/236x/5a/2b/83/5a2b8359d5d772bae0359c77cb8967a3.jpg', // Use the first image from galleryImages
                                 height: 100,
                                 width: 100,
                                 fit: BoxFit.cover,

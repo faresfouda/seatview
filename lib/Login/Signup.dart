@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:seatview/API/auth_service.dart';
 import 'package:seatview/Components/component.dart';
 import 'package:seatview/model/user.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -66,10 +67,22 @@ class _SignupScreenState extends State<SignupScreen> {
           phone: phone,
         );
 
+        print("SignUp Response: $response"); // Debugging log
+
         if (response['success']) {
           final userProvider = Provider.of<UserProvider>(context, listen: false);
           final token = response['token'] ?? '';
+
+          // Check if the token is empty
+          if (token.isEmpty) {
+            print("Error: Token is missing in the API response");
+          }
+
           userProvider.setUserData(UserModel.fromJson(response['user']), token);
+
+          // Save token persistently (if applicable)
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('token', token);
 
           DefaultSnackbar.show(
             context,
@@ -77,7 +90,6 @@ class _SignupScreenState extends State<SignupScreen> {
             backgroundColor: Colors.green,
           );
 
-          // Navigate to verification screen after a slight delay
           await Future.delayed(const Duration(seconds: 1));
           Navigator.pushReplacementNamed(context, 'verification');
         } else {
@@ -88,6 +100,7 @@ class _SignupScreenState extends State<SignupScreen> {
           );
         }
       } catch (e) {
+        print("SignUp Error: $e"); // Debugging log
         DefaultSnackbar.show(
           context,
           'Sign-up failed: $e',
@@ -100,6 +113,7 @@ class _SignupScreenState extends State<SignupScreen> {
       }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

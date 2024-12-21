@@ -14,7 +14,7 @@ class EmailVerificationScreen extends StatefulWidget {
 }
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
-  bool _isVerified = false; // Tracks verification status
+// Tracks verification status
   bool _isChecking = false; // Tracks if a check is in progress
 
   Future<void> _checkVerificationStatus() async {
@@ -35,7 +35,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         final responseData = jsonDecode(response.body);
         if (responseData['status'] == 'success' && responseData['isConfirmed'] == true) {
           setState(() {
-            _isVerified = true;
           });
           DefaultSnackbar.show(
             context,

@@ -11,8 +11,7 @@ class UserModel {
   final String email;
   final String phone;
   final bool isConfirmed;
-  final String? image;
-
+  final ImageData? image; // Changed to an `ImageData` object
 
   UserModel({
     required this.id,
@@ -26,27 +25,58 @@ class UserModel {
   // From JSON
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] ?? '',
+      id: json['_id'] ?? '',
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       phone: json['phone'] ?? '',
-      isConfirmed: json['isConfirmed'] ?? '',
-      image: json['image'], // Optional
+      isConfirmed: json['isConfirmed'] ?? false,
+      image: json['image'] != null ? ImageData.fromJson(json['image']) : null, // Parse image URL
     );
   }
+
+
 
   // To JSON
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      '_id': id,
       'name': name,
       'email': email,
       'phone': phone,
-      'isConfirmed':isConfirmed,
-      'image': image,
+      'isConfirmed': isConfirmed,
+      'image': image?.toJson(),
     };
   }
 }
+
+class ImageData {
+  final String publicId;
+  final String secureUrl;
+
+  ImageData({
+    required this.publicId,
+    required this.secureUrl,
+  });
+
+  // From JSON
+  factory ImageData.fromJson(Map<String, dynamic> json) {
+    return ImageData(
+      publicId: json['public_id'] ?? '',
+      secureUrl: json['secure_url'] ?? '', // Ensure correct URL
+    );
+  }
+
+
+
+  // To JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'public_id': publicId,
+      'secure_url': secureUrl,
+    };
+  }
+}
+
 
 class UserProvider with ChangeNotifier {
   static const String _tokenKey = 'userToken';
@@ -73,6 +103,9 @@ class UserProvider with ChangeNotifier {
       _token = storedToken;
       Map<String, dynamic> userJson = jsonDecode(storedUserData);
       _user = UserModel.fromJson(userJson);
+
+      // Debug print statement
+      print('Loaded user image URL: ${_user?.image?.secureUrl}'); // Check the URL after loading from SharedPreferences
     } else {
       print('Token is missing, logging out.');
       await logout();
@@ -80,6 +113,7 @@ class UserProvider with ChangeNotifier {
 
     notifyListeners();
   }
+
 
   // Set user data and token when logging in
   Future<void> setUserData(UserModel userModel, String token) async {
@@ -94,6 +128,26 @@ class UserProvider with ChangeNotifier {
 
     notifyListeners();
   }
+
+  // Update user data (after profile update)
+  Future<void> updateUser(UserModel updatedUser) async {
+    _user = updatedUser;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userKey, jsonEncode(updatedUser.toJson())); // Save updated user data
+
+    // Debug print statement
+    print('Updated user image URL: ${updatedUser.image?.secureUrl}'); // Check the new URL
+
+    // Ensure UI is notified after data is updated
+    await checkUserSession(); // Reload user session
+    notifyListeners(); // Notify the UI to rebuild
+  }
+
+
+
+
+
+
 
   // Login function
   Future<void> login(String email, String password) async {
@@ -122,5 +176,6 @@ class UserProvider with ChangeNotifier {
     notifyListeners();  // Notify listeners to update the UI or dependent components
   }
 }
+
 
 
