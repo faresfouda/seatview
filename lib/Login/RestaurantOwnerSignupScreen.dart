@@ -5,14 +5,14 @@ import 'package:seatview/Components/component.dart';
 import 'package:seatview/model/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+class RestaurantOwnerSignupScreen extends StatefulWidget {
+  const RestaurantOwnerSignupScreen({super.key});
 
   @override
-  _SignupScreenState createState() => _SignupScreenState();
+  _RestaurantOwnerSignupScreenState createState() => _RestaurantOwnerSignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _RestaurantOwnerSignupScreenState extends State<RestaurantOwnerSignupScreen> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -65,8 +65,7 @@ class _SignupScreenState extends State<SignupScreen> {
           email: email,
           password: password,
           phone: phone,
-          role: 'user',
-
+          role: 'restaurantOwner'
         );
 
         print("SignUp Response: $response"); // Debugging log
@@ -144,13 +143,15 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        "SIGN UP",
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 2,
+                      Center(
+                        child: const Text(
+                          "RESTAURANT OWNER SIGN UP",
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 2,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 30),
@@ -218,14 +219,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         onPressed: () {
                           Navigator.pushNamed(context, 'login');
                         },
-                        text: "ALREADY HAVE AN ACCOUNT?",
-                      ),
-                      const SizedBox(height: 20),
-                      DefaultTextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, 'restaurantOwnerSignup');
-                        },
-                        text: "SIGN UP AS RESTAURANT OWNER?",
+                        text: "BACK TO LOGIN",
                       ),
                     ],
                   ),

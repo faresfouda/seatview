@@ -43,6 +43,7 @@ class AuthService {
             'phone': user['phone'] ?? '',
             'imageUrl': user['imageUrl'] ?? '', // Add imageUrl here if it exists
             'isConfirmed': user['isConfirmed'] ?? false,
+            'role': user['role']??'',
           },
           'token': token ?? '', // Include the token
         };
@@ -68,6 +69,7 @@ class AuthService {
     required String email,
     required String password,
     required String phone,
+    required String role,
   }) async {
     try {
       print('Sending POST request to: $_baseUrl/users/signup');
@@ -76,6 +78,7 @@ class AuthService {
         'email': email,
         'password': password,
         'phone': phone,
+        'role' : role,
       })}');
 
       final response = await http.post(
@@ -86,6 +89,7 @@ class AuthService {
           'email': email,
           'password': password,
           'phone': phone,
+          'role' : role,
         }),
       );
 
@@ -106,7 +110,7 @@ class AuthService {
             'name': user['name'] ?? '',
             'email': user['email'] ?? '',
             'isConfirmed': user['isConfirmed'] ?? false,
-
+            'role' : user['role'],
           },
         };
       } else {
@@ -171,3 +175,33 @@ class AuthService {
     }
   }
 }
+
+Future<void> addFavorite(String token, String restaurantId) async {
+  const String url = 'https://restaurant-reservation-sys.vercel.app/users/favorites/add';
+
+  try {
+    // Construct the body
+    final body = jsonEncode({'restaurantId': restaurantId});
+
+    // Make the HTTP POST request
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'token': '$token', // Include the token in the header
+      },
+      body: body,
+    );
+
+    // Check the response status
+    if (response.statusCode == 200) {
+      print('Restaurant added to favorites successfully!');
+      print(response.body);
+    } else {
+      print('Failed to add favorite: ${response.body}');
+    }
+  } catch (e) {
+    print('An error occurred: $e');
+  }
+}
+

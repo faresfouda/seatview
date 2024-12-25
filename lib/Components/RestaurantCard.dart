@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:seatview/API/restaurants_service.dart';
+import 'package:seatview/Main/FavoritesProvider.dart';
+import 'package:seatview/model/restaurant.dart';
 
 
 class RestaurantCard extends StatelessWidget {
@@ -9,7 +13,7 @@ class RestaurantCard extends StatelessWidget {
   final int reviewsCount;
   final VoidCallback onFavoritePressed;
   final bool isFavorite;
-  final Map<String, dynamic> restaurant;  // Pass the restaurant data as a parameter
+  final Restaurant restaurant;  // Pass the restaurant data as a parameter
 
   const RestaurantCard({
     Key? key,
@@ -23,8 +27,12 @@ class RestaurantCard extends StatelessWidget {
     this.isFavorite = false,
   }) : super(key: key);
 
+
   @override
   Widget build(BuildContext context) {
+    final favoritesProvider = Provider.of<FavoritesProvider>(context);
+    final isFavorite =favoritesProvider.isFavorite(restaurant.id);
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
@@ -38,8 +46,9 @@ class RestaurantCard extends StatelessWidget {
               Navigator.pushNamed(
                 context,
                 'RestaurantAboutScreen',  // Make sure this is the correct route
-                arguments: restaurant,  // Pass restaurant data
+                arguments: restaurant.toMap(),  // Pass restaurant data
               );
+              print(restaurant);
             },
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
@@ -57,7 +66,7 @@ class RestaurantCard extends StatelessWidget {
               children: [
                 const Icon(Icons.star, color: Colors.yellow, size: 16),
                 Text(
-                  '$rating ($reviewsCount Reviews)',
+                  '${rating.toStringAsFixed(2)} ($reviewsCount Reviews)',
                   style: const TextStyle(fontSize: 12),
                 ),
               ],
@@ -76,13 +85,5 @@ class RestaurantCard extends StatelessWidget {
   }
 }
 
-List<Map<String, dynamic>> bookedTables = [
-  {
-    'table': 5,
-    'date': DateTime.now(),
-    'time': TimeOfDay(hour: 18, minute: 30),
-    'restaurantName': 'The Fancy Fork',
-    'restaurantImage': 'https://via.placeholder.com/100',
-  }
-];
+
 

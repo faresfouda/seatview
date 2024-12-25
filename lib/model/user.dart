@@ -10,6 +10,7 @@ class UserModel {
   final String name;
   final String email;
   final String phone;
+  final String role;
   final bool isConfirmed;
   final ImageData? image; // Changed to an `ImageData` object
 
@@ -18,6 +19,7 @@ class UserModel {
     required this.name,
     required this.email,
     required this.phone,
+    required this.role,
     required this.isConfirmed,
     this.image,
   });
@@ -29,6 +31,7 @@ class UserModel {
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       phone: json['phone'] ?? '',
+      role: json['role'] ??'',
       isConfirmed: json['isConfirmed'] ?? false,
       image: json['image'] != null ? ImageData.fromJson(json['image']) : null, // Parse image URL
     );
@@ -44,6 +47,7 @@ class UserModel {
       'email': email,
       'phone': phone,
       'isConfirmed': isConfirmed,
+      'role': role,
       'image': image?.toJson(),
     };
   }
@@ -90,6 +94,9 @@ class UserProvider with ChangeNotifier {
 
   bool get isLoggedIn => _user != null && _token != null;
 
+  // Getter for user role
+  String? get role => _user?.role;
+
   // Check if user session exists
   Future<void> checkUserSession() async {
     final prefs = await SharedPreferences.getInstance();
@@ -113,7 +120,6 @@ class UserProvider with ChangeNotifier {
 
     notifyListeners();
   }
-
 
   // Set user data and token when logging in
   Future<void> setUserData(UserModel userModel, String token) async {
@@ -143,12 +149,6 @@ class UserProvider with ChangeNotifier {
     notifyListeners(); // Notify the UI to rebuild
   }
 
-
-
-
-
-
-
   // Login function
   Future<void> login(String email, String password) async {
     final authService = AuthService();
@@ -168,14 +168,15 @@ class UserProvider with ChangeNotifier {
 
   // Logout function
   Future<void> logout() async {
-    _user = null;    // Clear user data
-    _token = null;   // Clear token
+    _user = null; // Clear user data
+    _token = null; // Clear token
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);  // Remove token from local storage
-    await prefs.remove(_userKey);  // Remove user data from local storage
-    notifyListeners();  // Notify listeners to update the UI or dependent components
+    await prefs.remove(_tokenKey); // Remove token from local storage
+    await prefs.remove(_userKey); // Remove user data from local storage
+    notifyListeners(); // Notify listeners to update the UI or dependent components
   }
 }
+
 
 
 

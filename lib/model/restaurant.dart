@@ -1,3 +1,5 @@
+
+
 class Restaurant {
   final String id;
   final String name;
@@ -6,7 +8,9 @@ class Restaurant {
   final String openingHours;
   final String profileImage;
   final String layoutImage;
-  final List<ImageData> galleryImages;
+  final double avgRating;
+  final List<String> categories;
+  final List<String> galleryImages;  // Keep this as a List<String>
 
   Restaurant({
     required this.id,
@@ -16,15 +20,12 @@ class Restaurant {
     required this.openingHours,
     required this.profileImage,
     required this.layoutImage,
+    required this.avgRating,
+    required this.categories,
     required this.galleryImages,
   });
 
-  // Factory method to create a Restaurant from a JSON object
   factory Restaurant.fromJson(Map<String, dynamic> json) {
-    // Mapping gallery images to ImageData
-    var galleryList = json['galleryImages'] as List;
-    List<ImageData> galleryUrls = galleryList.map((item) => ImageData.fromJson(item)).toList();
-
     return Restaurant(
       id: json['_id'],
       name: json['name'],
@@ -33,24 +34,24 @@ class Restaurant {
       openingHours: json['openingHours'],
       profileImage: json['profileImage']['secure_url'],
       layoutImage: json['layoutImage']['secure_url'],
-      galleryImages: galleryUrls,
+      avgRating: json['avgRating'].toDouble(),
+      categories: List<String>.from(json['categories'] ?? []),
+      galleryImages: List<String>.from(json['galleryImages']?.map((image) => image['secure_url']) ?? []),  // Handle as list of strings
     );
   }
-}
-class ImageData {
-  final String secureUrl;
-  final String publicId;
 
-  ImageData({
-    required this.secureUrl,
-    required this.publicId,
-  });
-
-  // Factory method to create ImageData from JSON
-  factory ImageData.fromJson(Map<String, dynamic> json) {
-    return ImageData(
-      secureUrl: json['secure_url'],
-      publicId: json['public_id'],
-    );
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'address': address,
+      'phone': phone,
+      'openingHours': openingHours,
+      'profileImage': profileImage,
+      'layoutImage': layoutImage,
+      'galleryImages': galleryImages,  // Directly map the list of strings
+      'categories': categories,
+    };
   }
+
 }

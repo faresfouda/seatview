@@ -1,6 +1,10 @@
+import 'dart:convert'; // For jsonDecode
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http; // Import the http package
+import 'package:provider/provider.dart';
 import 'package:seatview/Components/ElevatedButton.dart';
 import 'package:seatview/Main/BookingTime.dart';
+import 'package:seatview/model/user.dart';
 
 class RestaurantBookingScreen extends StatefulWidget {
   final Map<String, dynamic> restaurant; // Add restaurant parameter
@@ -13,12 +17,55 @@ class RestaurantBookingScreen extends StatefulWidget {
       _RestaurantBookingScreenState();
 }
 
-
 class _RestaurantBookingScreenState extends State<RestaurantBookingScreen> {
-  int? selectedTable; // To keep track of the selected table
+  int? selectedTableIndex; // To keep track of the selected table index
+  List<Map<String, dynamic>> tables = []; // List to store tables
+  bool noAvailableTables = false; // To track if there are no available tables
+
+  @override
+  void initState() {
+    super.initState();
+    fetchTables(); // Fetch the tables when the widget is initialized
+  }
+
+  // Fetch tables from the API
+  Future<void> fetchTables() async {
+    final restaurantId = widget.restaurant['id']; // Get restaurant ID
+    final url =
+        'https://restaurant-reservation-sys.vercel.app/tables/restaurant/$restaurantId';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print(response.body);
+
+        // Check if the 'data' key is null or empty
+        if (data['data'] == null || data['data'].isEmpty) {
+          setState(() {
+            noAvailableTables = true; // Set flag if no tables are available
+            tables = []; // Ensure tables is empty
+          });
+        } else {
+          setState(() {
+            noAvailableTables = false; // Reset the flag if tables are available
+            tables = List<Map<String, dynamic>>.from(data['data']);
+          });
+        }
+      } else {
+        // Handle the error here if the request fails
+        throw Exception('Failed to load tables');
+      }
+    } catch (e) {
+      // Handle the exception here
+      print(e);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.red,
@@ -34,9 +81,9 @@ class _RestaurantBookingScreenState extends State<RestaurantBookingScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Restaurant Name
-            const Text(
-              'Restaurant Name',
-              style: TextStyle(
+            Text(
+              widget.restaurant['name'] ?? 'Restaurant Name',
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -50,95 +97,116 @@ class _RestaurantBookingScreenState extends State<RestaurantBookingScreen> {
             ),
             const SizedBox(height: 16),
 
-            // List of tables
-            Expanded(
-              child: ListView.builder(
-                physics: const BouncingScrollPhysics(),
-                itemCount: 10, // Example: 10 tables
-                itemBuilder: (context, index) {
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedTable = index; // Select the tapped table
-                      });
-                    },
-                    child: Card(
-                      color: selectedTable == index
-                          ? Colors.red[100]
-                          : Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: selectedTable == index
-                              ? Colors.red
-                              : Colors.grey.shade300,
-                          width: 2,
+            // Check if no tables are available
+            if (noAvailableTables)
+              const Center(
+                child: Text(
+                  'No available tables at the moment.',
+                  style: TextStyle(fontSize: 18, color: Colors.red),
+                ),
+              )
+            else
+            // List of tables fetched from the API
+              Expanded(
+                child: tables.isEmpty
+                    ? const Center(
+                  child: CircularProgressIndicator(),
+                ) // Show loading indicator while fetching
+                    : ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: tables.length,
+                  itemBuilder: (context, index) {
+                    final table = tables[index];
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedTableIndex =
+                              index; // Select the tapped table
+                        });
+                      },
+                      child: Card(
+                        color: selectedTableIndex == index
+                            ? Colors.red[100]
+                            : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: selectedTableIndex == index
+                                ? Colors.red
+                                : Colors.grey.shade300,
+                            width: 2,
+                          ),
+                        ),
+                        child: ListTile(
+                          leading: const Icon(
+                            Icons.chair,
+                            color: Colors.red,
+                            size: 32,
+                          ),
+                          title: Text(
+                            'Table ${table['tableNumber']}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text('Seats: ${table['capacity']}'),
+                          trailing: selectedTableIndex == index
+                              ? const Icon(
+                            Icons.check_circle,
+                            color: Colors.red,
+                          )
+                              : null,
                         ),
                       ),
-                      child: ListTile(
-                        leading: const Icon(
-                          Icons.chair,
-                          color: Colors.red,
-                          size: 32,
-                        ),
-                        title: Text(
-                          'Table ${index + 1}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: const Text('Seats: 4'),
-                        trailing: selectedTable == index
-                            ? const Icon(
-                          Icons.check_circle,
-                          color: Colors.red,
-                        )
-                            : null,
-                      ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
 
             // Options for booking
-            if (selectedTable != null)
+            if (selectedTableIndex != null)
               Column(
                 children: [
                   CustomElevatedButton(
                     onPressed: () {
-
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BookingTime(selectedTable: selectedTable!, isOrder: false, restaurant: widget.restaurant,),
-                          ),
-                        );
-
-
-
-                    },
-                    buttonText: 'Book Only',
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  CustomElevatedButton(
-                    onPressed: () {
+                      final selectedTableNumber =
+                      tables[selectedTableIndex!]['tableNumber'];
+                      final selectedTableId =
+                      tables[selectedTableIndex!]['_id'];
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => BookingTime(selectedTable: selectedTable!, isOrder: true,restaurant: widget.restaurant,),
+                          builder: (context) => BookingTime(
+                            token: userProvider.token??'',
+                            selectedTable: selectedTableNumber,
+                            isOrder: false,
+                            restaurant: widget.restaurant, selectedTableId: selectedTableId,
+                          ),
                         ),
                       );
-                      // Logic for booking the table and making an order
-                      /*ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Table ${selectedTable! + 1} booked, proceed to order!'),
+                    },
+                    buttonText: 'Book Only',
+                  ),
+                  const SizedBox(height: 16),
+                  CustomElevatedButton(
+                    onPressed: () {
+                      final selectedTableNumber =
+                      tables[selectedTableIndex!]['tableNumber'];
+                      final selectedTableId =
+                      tables[selectedTableIndex!]['_id'];
+                      print(selectedTableNumber);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BookingTime(
+                            selectedTable: selectedTableId,
+                            isOrder: true,
+                            restaurant: widget.restaurant, selectedTableId: selectedTableId,
+                          ),
                         ),
-                      );*/
+                      );
                     },
                     buttonText: 'Book and Order',
                   ),
-
                 ],
               ),
           ],

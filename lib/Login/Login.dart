@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:seatview/API/auth_service.dart';
 import 'package:seatview/Components/component.dart';
+import 'package:seatview/Main/MainScreen.dart';
 import 'package:seatview/model/user.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -107,7 +108,12 @@ class _LoginScreenState extends State<LoginScreen> {
             );
 
             // Navigate to the home page
-            Navigator.pushReplacementNamed(context, 'home');
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => MainScreen(userRole: user.role),
+              ),
+            );
+
           } else {
             DefaultSnackbar.show(
               context,

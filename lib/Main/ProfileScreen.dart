@@ -275,6 +275,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             email: user.email,
                             phone: updatedPhoneNumber,
                             isConfirmed: user.isConfirmed,
+                            role: user.role,
                           ),
                           token ?? '',
                         );

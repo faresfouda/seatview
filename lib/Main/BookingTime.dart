@@ -1,18 +1,23 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:seatview/API/DatabaseHelper_BookedTables.dart';
-import 'package:seatview/Components/ElevatedButton.dart';
+import 'package:intl/intl.dart';
+import 'package:seatview/API/reservation_services.dart';
 import 'package:seatview/Main/RestaurantMenuScreen.dart';
 import 'package:seatview/Main/MainScreen.dart';
 
 class BookingTime extends StatefulWidget {
-  final int selectedTable;
+  final String selectedTable;
+  final String selectedTableId;
   final bool isOrder;
   final Map<String, dynamic> restaurant;
+  final String? token; // Token for API authentication
 
   const BookingTime({
     required this.selectedTable,
+    required this.selectedTableId,
     required this.isOrder,
     required this.restaurant,
+    this.token,
     Key? key,
   }) : super(key: key);
 
@@ -21,8 +26,9 @@ class BookingTime extends StatefulWidget {
 }
 
 class _BookingTimeState extends State<BookingTime> {
-  DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
+  DateTime ?_selectedDate;
+  TimeOfDay ?_selectedTime;
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -35,37 +41,70 @@ class _BookingTimeState extends State<BookingTime> {
         ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Table Selection Header
-            Text(
-              'You have selected Table ${widget.selectedTable + 1}',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'You have selected Table ${widget.selectedTable}',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildDateSelector(),
+                const SizedBox(height: 16),
+                _buildTimeSelector(),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                    if (widget.isOrder) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => RestaurantMenuScreen(
+                            restaurant: widget.restaurant,
+                            selectedDate: _selectedDate!,
+                            selectedTime: _selectedTime!,
+                            selectedTable: widget.selectedTable,
+                          ),
+                        ),
+                      );
+                    } else {
+                      _onBookingConfirm();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 24.0),
+                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                    widget.isOrder ? 'Next' : 'Confirm Booking',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+
+              ],
             ),
-            const SizedBox(height: 16),
-
-            // Date Selection
-            _buildDateSelector(),
-            const SizedBox(height: 16),
-
-            // Time Selection
-            _buildTimeSelector(),
-            const SizedBox(height: 32),
-
-            // Confirm Booking Button
-            CustomElevatedButton(
-              buttonText: widget.isOrder ? 'Next' : 'Confirm Booking',
-              onPressed: _onBookingConfirm,
+          ),
+          if (_isLoading)
+            const Center(
+              child: CircularProgressIndicator(),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -78,7 +117,7 @@ class _BookingTimeState extends State<BookingTime> {
         title: Text(
           _selectedDate == null
               ? 'Select Date'
-              : 'Date: ${_selectedDate!.toLocal()}'.split(' ')[0],
+              : 'Date: ${DateFormat('yyyy-MM-dd').format(_selectedDate!)}',
           style: const TextStyle(fontSize: 18),
         ),
         trailing: ElevatedButton(
@@ -140,51 +179,51 @@ class _BookingTimeState extends State<BookingTime> {
 
   void _onBookingConfirm() async {
     if (_selectedDate != null && _selectedTime != null) {
-      if (widget.isOrder) {
-        // Navigate to the restaurant menu screen
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => RestaurantMenuScreen(
-              restaurant: widget.restaurant,
-              selectedDate: _selectedDate!,
-              selectedTime: _selectedTime!,
-              selectedTable: widget.selectedTable,
-            ),
-          ),
-        );
-      } else {
-        Map<String, dynamic> bookingOrder = {
-          'tableNumber': widget.selectedTable + 1,
-          'date': _selectedDate!.toIso8601String(),
-          'time': _selectedTime!.format(context),
-          'restaurantName': widget.restaurant['title'],
-          'restaurantImage': widget.restaurant['imageUrl'],
-          'orderDetails': null,
-          'totalAmount': null,
-        };
+      setState(() => _isLoading = true);
 
-        await DatabaseHelper().insertBookingOrder(bookingOrder);
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => MainScreen()),
-              (Route<dynamic> route) => false,
+      try {
+        final reservationService = ReservationService();
+        final response = await reservationService.createReservation(
+          token: widget.token ??'',
+          tableId: widget.selectedTableId,
+          restaurantId: widget.restaurant['id'],
+          date: DateFormat('MM-dd-yyyy').format(_selectedDate!),
+          time: _selectedTime!.format(context),
+          mealId: [], // Empty for now; add ordered meals if applicable.
         );
+
+        if (response['message'] == 'Reservation created successfully') {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => MainScreen(userRole:'user',
+            )),
+                (Route<dynamic> route) => false,
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.green,
+              content: Text('Table ${widget.selectedTable} booked successfully!'),
+            ),
+          );
+        } else {
+          throw Exception(response['message'] ?? 'Error during reservation.');
+        }
+      } catch (error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: Colors.green,
-            content: Text(
-              'Table ${widget.selectedTable + 1} booked successfully!',
-            ),
+            backgroundColor: Colors.red,
+            content: Text('Failed to book table: $error'),
           ),
         );
+      } finally {
+        setState(() => _isLoading = false);
       }
     } else {
-      // Show an error if no date or time selected
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           backgroundColor: Colors.red,
-          content: const Text('Please select both date and time'),
+          content: Text('Please select both date and time.'),
         ),
       );
     }

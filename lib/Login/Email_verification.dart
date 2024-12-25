@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'package:seatview/Components/component.dart';
+import 'package:seatview/Login/Login.dart';
 import 'package:seatview/Main/MainScreen.dart';
 import 'package:seatview/model/user.dart';
 
@@ -43,7 +44,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
           );
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => MainScreen()), // Replace with your home screen
+            MaterialPageRoute(builder: (context) => LoginScreen()), // Replace with your home screen
                 (route) => false,
           );
         } else {

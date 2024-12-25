@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:seatview/API/restaurants_service.dart';
 import 'package:seatview/Components/menu_provider.dart';
 import 'package:seatview/Login/Email_verification.dart';
 import 'package:seatview/Login/Forget_password.dart';
 import 'package:seatview/Login/Login.dart';
+import 'package:seatview/Login/RestaurantOwnerSignupScreen.dart';
 import 'package:seatview/Login/Signup.dart';
 import 'package:seatview/Main/DessertsScreen.dart';
 import 'package:seatview/Main/DrinksScreen.dart';
@@ -13,8 +15,9 @@ import 'package:seatview/Main/MealsScreen.dart';
 import 'package:seatview/Main/ProfileScreen.dart';
 import 'package:seatview/Main/RestaurantAboutScreen.dart';
 import 'package:seatview/Main/RestaurantsScreen.dart';
+import 'package:seatview/model/meal.dart';
+import 'package:seatview/model/table.dart';
 import 'package:seatview/model/user.dart';
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,8 +31,10 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => FavoritesProvider()),
-        ChangeNotifierProvider(create: (_) => MenuProvider()),
         ChangeNotifierProvider(create: (_) => userProvider),
+        ChangeNotifierProvider(create: (_) => RestaurantProvider()),
+        ChangeNotifierProvider(create: (_) => MealProvider(),),
+        ChangeNotifierProvider(create: (_) => TableProvider()),
       ],
       child: const MyApp(),
     ),
@@ -49,7 +54,7 @@ class MyApp extends StatelessWidget {
         if (userProvider.isLoggedIn) {
           // Check if the user is confirmed
           if (userProvider.user?.isConfirmed == true) {
-            return MainScreen();
+            return MainScreen(userRole: userProvider.user!.role,);
           } else {
             return const EmailVerificationScreen();
           }
@@ -62,25 +67,25 @@ class MyApp extends StatelessWidget {
     );
   }
 
-
   Map<String, WidgetBuilder> _appRoutes() {
+    final userProvider = UserProvider();
     return {
       'login': (context) => const LoginScreen(),
       'signup': (context) => const SignupScreen(),
       'forgot_password': (context) => const ForgotPasswordScreen(),
-      'home': (context) => MainScreen(),
+      'home': (context) => MainScreen(userRole:userProvider.user?.role??''),
       'verification': (context) => const EmailVerificationScreen(),
       'RestaurantAboutScreen': (context) => RestaurantAboutScreen(
-        initialTabIndex: 0,
-        restaurant: ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>,
-      ),
+            initialTabIndex: 0,
+            restaurant: ModalRoute.of(context)!.settings.arguments
+                as Map<String, dynamic>,
+          ),
       'ProfileScreen': (context) => ProfileScreen(),
       'RestaurantsScreen': (context) => RestaurantsScreen(),
       'DrinksScreen': (context) => const DrinksScreen(),
-      'MealsScreen': (context) => const Mealsscreen(),
+      'MealsScreen': (context) => const MealsScreen(),
       'DessertsScreen': (context) => const DessertsScreen(),
+      'restaurantOwnerSignup': (context) => RestaurantOwnerSignupScreen(),
     };
   }
 }
-
-
