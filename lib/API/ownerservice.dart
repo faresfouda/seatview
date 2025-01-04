@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
@@ -108,4 +109,141 @@ class OwnerService {
       onError("Error: $e");
     }
   }
+  Future<void> submitVipRoomData({
+    required String token,
+    required String name,
+    required String capacity,
+    required String restaurantId,
+    required List<File> images,
+    required VoidCallback onSuccess,
+    required Function(String) onError,
+  }) async {
+    try {
+      final uri = Uri.parse('https://restaurant-reservation-sys.vercel.app/vip-rooms/create');
+      final request = http.MultipartRequest('POST', uri);
+
+      request.headers['token'] = token;
+      request.fields['name'] = name;
+      request.fields['capacity'] = capacity;
+      request.fields['restaurantId'] = restaurantId;
+
+      for (var image in images) {
+        request.files.add(await http.MultipartFile.fromPath('images', image.path,
+          contentType: MediaType('image', 'jpeg'),
+        ));
+      }
+
+      final response = await request.send();
+
+      // Read and print the response body
+      final responseBody = await response.stream.bytesToString();
+      print('Response body: $responseBody');
+
+      if (response.statusCode == 201) {
+        // Notify success and call the callback
+        onSuccess();
+      } else {
+        onError('Failed to add VIP Room: ${response.statusCode}');
+      }
+    } catch (e) {
+      onError('An error occurred: $e');
+    }
+  }
+
+  Future<void> submitMealData({
+    required String token,
+    required String name,
+    required String desc,
+    required String price,
+    required String restaurantId,
+    required File image,  // This should be a single File
+    required String category,
+    required VoidCallback onSuccess,
+    required Function(String) onError,
+  }) async {
+    try {
+      final uri = Uri.parse('https://restaurant-reservation-sys.vercel.app/meals/create');
+      final request = http.MultipartRequest('POST', uri);
+
+      request.headers['token'] = token;
+      request.fields['name'] = name;
+      request.fields['desc'] = desc;
+      request.fields['price'] = price;
+      request.fields['restaurantId'] = restaurantId;
+      request.fields['category'] = category;
+
+      // Add the single image to the request
+      request.files.add(await http.MultipartFile.fromPath(
+        'image', image.path,  // Use 'image' for a single file
+        contentType: MediaType('image', 'jpeg'),
+      ));
+
+      final response = await request.send();
+
+      // Read and print the response body
+      final responseBody = await response.stream.bytesToString();
+      print('Response body: $responseBody');
+
+      if (response.statusCode == 201) {
+        // Notify success and call the callback
+        onSuccess();
+      } else {
+        final error = json.decode(responseBody);
+        onError('Failed to add meal: ${error['message']}');
+      }
+    } catch (e) {
+      onError('An error occurred: $e');
+    }
+  }
+
+  Future<void> submitTableData({
+    required String token,
+    required String restaurantId,
+    required String tableNumber,
+    required String capacity,
+    required VoidCallback onSuccess,
+    required Function(String) onError,
+  }) async {
+    try {
+      final uri = Uri.parse('https://restaurant-reservation-sys.vercel.app/tables/create');
+
+      // Prepare the request body
+      final Map<String, dynamic> requestBody = {
+        'restaurantId': restaurantId,
+        'tableNumber': tableNumber,
+        'capacity': capacity,
+      };
+
+      // Print the body for debugging
+      print('Request body: ${jsonEncode(requestBody)}');
+
+      // Send the POST request with raw JSON body
+      final response = await http.post(
+        uri,
+        headers: {
+          'token': token,
+          'Content-Type': 'application/json',  // Set content type to JSON
+        },
+        body: jsonEncode(requestBody),  // Convert requestBody to JSON
+      );
+
+      final responseBody = response.body;
+      print('Response body: $responseBody');
+
+      if (response.statusCode == 201) {
+        // Notify success and call the callback
+        onSuccess();
+      } else {
+        final error = json.decode(responseBody);
+        onError('Failed to add table: ${error['message']}');
+      }
+    } catch (e) {
+      onError('An error occurred: $e');
+    }
+  }
+
+
+
 }
+
+

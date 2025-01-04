@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:seatview/API/auth_service.dart';
 import 'package:seatview/Components/component.dart';
+import 'package:seatview/Main/AddNewRestaurantScreen.dart';
 import 'package:seatview/Main/MainScreen.dart';
 import 'package:seatview/model/user.dart';
 
@@ -107,12 +108,31 @@ class _LoginScreenState extends State<LoginScreen> {
               backgroundColor: Colors.green,
             );
 
-            // Navigate to the home page
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) => MainScreen(userRole: user.role),
-              ),
-            );
+            // Check if the user has added a restaurant
+            if (user.role =='restaurantOwner') {
+              if(user.restaurant == null){
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) => AddNewRestaurantScreen(),
+                  ),
+                );
+              }else {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) =>MainScreen(userRole: 'restaurantOwner') ,
+                  ),
+                );
+              }
+              
+              
+            } else {
+              // Navigate to the main screen if the restaurant is added
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => MainScreen(userRole: user.role),
+                ),
+              );
+            }
 
           } else {
             DefaultSnackbar.show(
@@ -143,6 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+
 
 
   @override

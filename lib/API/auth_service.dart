@@ -44,6 +44,7 @@ class AuthService {
             'imageUrl': user['imageUrl'] ?? '', // Add imageUrl here if it exists
             'isConfirmed': user['isConfirmed'] ?? false,
             'role': user['role']??'',
+            'restaurant':user['restaurant'],
           },
           'token': token ?? '', // Include the token
         };

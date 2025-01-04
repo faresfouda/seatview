@@ -3,10 +3,13 @@ import 'package:motion_tab_bar_v2/motion-tab-bar.dart';
 import 'package:motion_tab_bar_v2/motion-tab-controller.dart';
 import 'package:seatview/Main/DashboardScreen.dart';
 import 'package:seatview/Main/HomeScreen.dart';
+import 'package:seatview/Main/InventoryManagementScreen.dart';
 import 'package:seatview/Main/OwnerHomeScreen.dart';
 import 'package:seatview/Main/ProfileScreen.dart';
 import 'package:seatview/Main/FavouriteScreen.dart';
+import 'package:seatview/Main/ReservationsScreen.dart';
 import 'package:seatview/Main/SearchScreen.dart';
+import 'package:seatview/Main/UpdateRestaurantScreen.dart';
 
 class MainScreen extends StatefulWidget {
   final String userRole; // Accept user role as a parameter
@@ -24,14 +27,15 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    print('role: ${widget.userRole}');
+    print('Role: ${widget.userRole}');
 
     // Define screens based on user role
     _screens = widget.userRole == 'restaurantOwner'
         ? [
-      DashboardScreen(),
+      ReservationsScreen(),
+      InventoryManagementScreen(),
       OwnerHomeScreen(), // Home screen for restaurant owners
-      FavouriteScreen(),
+      UpdateRestaurantScreen(),
       ProfileScreen(),
     ]
         : [
@@ -42,7 +46,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
     ];
 
     _motionTabBarController = MotionTabBarController(
-      initialIndex: 1, // Default to the second tab ("Home")
+      initialIndex: widget.userRole == 'restaurantOwner' ? 2 : 1, // Dynamic initial index
       length: _screens.length, // Adjust based on the number of screens
       vsync: this, // Pass the current State object for vsync
     );
@@ -92,12 +96,12 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
       ),
       bottomNavigationBar: MotionTabBar(
         controller: _motionTabBarController, // Connect to MotionTabBarController
-        initialSelectedTab: "Home",
+        initialSelectedTab: widget.userRole == 'restaurantOwner' ? "Home" : "Home",
         labels: widget.userRole == 'restaurantOwner'
-            ? ["Bookings", "Home", "Favourite", "Profile"]
+            ? ["Bookings", "Inventory", "Home", "My restaurant","Profile"]
             : ["Bookings", "Home", "Favourite", "Profile"],
         icons: widget.userRole == 'restaurantOwner'
-            ? [Icons.event, Icons.home, Icons.favorite, Icons.account_circle]
+            ? [Icons.event, Icons.inventory, Icons.home,Icons.local_restaurant ,Icons.account_circle]
             : [Icons.event, Icons.home, Icons.favorite, Icons.account_circle],
         tabSize: 50,
         tabBarHeight: 55,

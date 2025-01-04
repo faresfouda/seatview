@@ -13,6 +13,7 @@ class UserModel {
   final String role;
   final bool isConfirmed;
   final ImageData? image; // Changed to an `ImageData` object
+  final String? restaurant;
 
   UserModel({
     required this.id,
@@ -22,6 +23,7 @@ class UserModel {
     required this.role,
     required this.isConfirmed,
     this.image,
+    this.restaurant,
   });
 
   // From JSON
@@ -33,7 +35,8 @@ class UserModel {
       phone: json['phone'] ?? '',
       role: json['role'] ??'',
       isConfirmed: json['isConfirmed'] ?? false,
-      image: json['image'] != null ? ImageData.fromJson(json['image']) : null, // Parse image URL
+      image: json['image'] != null ? ImageData.fromJson(json['image']) : null,
+      restaurant: json['restaurant'] ?? null,
     );
   }
 
@@ -49,6 +52,7 @@ class UserModel {
       'isConfirmed': isConfirmed,
       'role': role,
       'image': image?.toJson(),
+      'restaurant':restaurant,
     };
   }
 }
@@ -96,6 +100,7 @@ class UserProvider with ChangeNotifier {
 
   // Getter for user role
   String? get role => _user?.role;
+
 
   // Check if user session exists
   Future<void> checkUserSession() async {

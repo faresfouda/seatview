@@ -1,12 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import 'package:seatview/API/ownerservice.dart';
-
+import 'package:seatview/Main/AddVipRoomScreen.dart';
 import 'package:seatview/model/user.dart';
+
 
 class OwnerHomeScreen extends StatefulWidget {
   @override
@@ -14,109 +12,71 @@ class OwnerHomeScreen extends StatefulWidget {
 }
 
 class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _openingHoursController = TextEditingController();
-  final TextEditingController _categoriesController = TextEditingController();
+  List<Map<String, dynamic>> reservations = [];
+  List<Map<String, dynamic>> reviews = [];
+  List<Map<String, dynamic>> vipRooms = [];
+  bool isLoading = true;
+  bool hasError = false;
 
-  bool _isSubmitting = false;
-  File? _profileImage;
-  File? _layoutImage;
-  List<File> _galleryImages = [];
-
-  final OwnerService _ownerService = OwnerService();
-
-  // Pick profile image
-  Future<void> _pickProfileImage() async {
-    final pickedImage = await _ownerService.pickProfileImage();
-    if (pickedImage != null) {
-      setState(() {
-        _profileImage = pickedImage;
-      });
-    }
+  @override
+  void initState() {
+    super.initState();
+    fetchOwnerData();
   }
 
-  // Pick layout image
-  Future<void> _pickLayoutImage() async {
-    final pickedImage = await _ownerService.pickLayoutImage();
-    if (pickedImage != null) {
-      setState(() {
-        _layoutImage = pickedImage;
-      });
-    }
-  }
-
-  // Pick gallery images
-  Future<void> _pickGalleryImages() async {
-    final pickedImages = await _ownerService.pickGalleryImages();
-    setState(() {
-      _galleryImages = pickedImages;
-    });
-  }
-
-  // Submit restaurant data
-  Future<void> _submitRestaurantData() async {
+  Future<void> fetchOwnerData() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final String? token = userProvider.token;
+    final token = userProvider.token ?? '';
 
-    if (token == null) {
-      // Handle error if token is not available
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("User is not authenticated"),
-        backgroundColor: Colors.red,
-      ));
+    if (token.isEmpty) {
+      print('Token is null or empty');
+      setState(() {
+        hasError = true;
+      });
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    final reservationsUrl = Uri.parse(
+        'https://restaurant-reservation-sys.vercel.app/reservations/restaurant/67769fff29bc3a6e219576c2');
+    final reviewsUrl = Uri.parse(
+        'https://restaurant-reservation-sys.vercel.app/reviews/restaurant/67769fff29bc3a6e219576c2');
+    final vipRoomsUrl = Uri.parse(
+        'https://restaurant-reservation-sys.vercel.app/vip-rooms/restaurant/67769fff29bc3a6e219576c2');
 
     try {
-      await _ownerService.submitRestaurantData(
-        token: token,
-        name: _nameController.text.trim(),
-        address: _addressController.text.trim(),
-        phone: _phoneController.text.trim(),
-        openingHours: _openingHoursController.text.trim(),
-        categories: _categoriesController.text.trim().split(','),
-        profileImage: _profileImage,
-        layoutImage: _layoutImage,
-        galleryImages: _galleryImages,
-        onSuccess: () {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("Restaurant added successfully!"),
-            backgroundColor: Colors.green,
-          ));
+      final headers = {'token': '$token'};
 
-          // Clear input fields after successful submission
-          _nameController.clear();
-          _addressController.clear();
-          _phoneController.clear();
-          _openingHoursController.clear();
-          _categoriesController.clear();
-          setState(() {
-            _profileImage = null;
-            _layoutImage = null;
-            _galleryImages.clear();
-          });
-        },
-        onError: (error) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(error),
-            backgroundColor: Colors.red,
-          ));
-        },
-      );
+      final reservationsResponse = await http.get(reservationsUrl, headers: headers);
+      print('Reservations Response: ${reservationsResponse.body}');
+
+      final reviewsResponse = await http.get(reviewsUrl, headers: headers);
+      print('Reviews Response: ${reviewsResponse.body}');
+
+      final vipRoomsResponse = await http.get(vipRoomsUrl, headers: headers);
+      print('VIP Rooms Response: ${vipRoomsResponse.body}');
+
+      if (reservationsResponse.statusCode == 200 &&
+          vipRoomsResponse.statusCode == 200) {
+        final reservationsData = json.decode(reservationsResponse.body);
+        final reviewsData = json.decode(reviewsResponse.body);
+        final vipRoomsData = json.decode(vipRoomsResponse.body);
+
+        setState(() {
+          reservations = List<Map<String, dynamic>>.from(reservationsData['reservations'] ?? []);
+          reviews = List<Map<String, dynamic>>.from(reviewsData['reviews'] ?? []);
+          vipRooms = List<Map<String, dynamic>>.from(vipRoomsData['vipRooms'] ?? []);
+          isLoading = false;
+        });
+      } else {
+        print('HTTP error: ${reservationsResponse.statusCode}, ${reviewsResponse.statusCode}, ${vipRoomsResponse.statusCode}');
+        setState(() {
+          hasError = true;
+        });
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("Error: $e"),
-        backgroundColor: Colors.red,
-      ));
-    } finally {
+      print('Error fetching owner data: $e');
       setState(() {
-        _isSubmitting = false;
+        hasError = true;
       });
     }
   }
@@ -125,96 +85,163 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Add Restaurant"),
-        backgroundColor: Colors.red,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.vertical,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Restaurant name
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(labelText: "Restaurant Name"),
-              ),
-              // Address
-              TextField(
-                controller: _addressController,
-                decoration: InputDecoration(labelText: "Address"),
-              ),
-              // Phone number
-              TextField(
-                controller: _phoneController,
-                decoration: InputDecoration(labelText: "Phone Number"),
-                keyboardType: TextInputType.phone,
-              ),
-              // Opening hours
-              TextField(
-                controller: _openingHoursController,
-                decoration: InputDecoration(labelText: "Opening Hours"),
-              ),
-              // Categories
-              TextField(
-                controller: _categoriesController,
-                decoration: InputDecoration(
-                  labelText: "Categories (comma-separated, e.g., desserts,drinks)",
-                ),
-              ),
-              SizedBox(height: 20),
-
-              // Image selection buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _pickProfileImage,
-                      child: Text("Pick Profile Image"),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _pickLayoutImage,
-                      child: Text("Pick Layout Image"),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _pickGalleryImages,
-                      child: Text("Pick Gallery Images"),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-
-              // Display selected images
-              if (_profileImage != null) Text("Profile image selected"),
-              if (_layoutImage != null) Text("Layout image selected"),
-              if (_galleryImages.isNotEmpty) Text("Gallery images selected"),
-
-              SizedBox(height: 20),
-
-              // Submit button
-              _isSubmitting
-                  ? Center(child: CircularProgressIndicator())
-                  : SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _submitRestaurantData,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                  ),
-                  child: Text("Submit"),
-                ),
-              ),
-            ],
+        title: Row(
+          children: [
+            Icon(Icons.restaurant_menu, color: Colors.white),
+            SizedBox(width: 8),
+            Text("Restaurant Name"),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.settings),
+            onPressed: () {
+              // Navigate to Settings
+            },
           ),
+        ],
+      ),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : hasError
+          ? Center(
+        child: Text(
+          'Error loading data. Please try again.',
+          style: TextStyle(color: Colors.red, fontSize: 16),
+        ),
+      )
+          : SingleChildScrollView(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Today's Reservations Section
+            Text(
+              "Today's Reservations",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            reservations.isEmpty
+                ? Text('No reservations for today.')
+                : ListView.builder(
+              itemCount: reservations.length,
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemBuilder: (context, index) {
+                final reservation = reservations[index];
+                return Card(
+                  margin: EdgeInsets.symmetric(vertical: 8.0),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      child: Icon(Icons.person),
+                    ),
+                    title: Text(reservation['userId']['name'] ?? 'Unknown'),
+                    subtitle: Text(
+                        "Time: ${reservation['time']}\nGuests: ${reservation['tableId']['capacity']}"),
+                    trailing: Chip(
+                      label: Text(
+                        reservation['status'] ?? 'Pending',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      backgroundColor: reservation['status'] == 'Confirmed'
+                          ? Colors.green
+                          : Colors.orange,
+                    ),
+                  ),
+                );
+              },
+            ),
+            SizedBox(height: 16),
+
+            // Recent Reviews Section
+            Text(
+              "Recent Reviews",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            reviews.isEmpty
+                ? Text('No reviews available.')
+                : ListView.builder(
+              itemCount: reviews.length,
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemBuilder: (context, index) {
+                final review = reviews[index];
+                return Card(
+                  margin: EdgeInsets.symmetric(vertical: 8.0),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      child: Icon(Icons.star, color: Colors.amber),
+                    ),
+                    title: Text(review['customerName'] ?? 'Unknown'),
+                    subtitle: Text(review['comment'] ?? 'No comment'),
+                    trailing: IconButton(
+                      icon: Icon(Icons.reply),
+                      onPressed: () {
+                        // Handle reply action
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+            SizedBox(height: 16),
+
+            // VIP Reserved Rooms Section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "VIP Reserved Rooms",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            vipRooms.isEmpty
+                ? Text('No VIP rooms reserved.')
+                : GridView.builder(
+              itemCount: vipRooms.length,
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 8.0,
+                crossAxisSpacing: 8.0,
+                childAspectRatio: 1.2,
+              ),
+              itemBuilder: (context, index) {
+                final room = vipRooms[index];
+                return Card(
+                  elevation: 4,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Container(
+                          color: Colors.grey[300],
+                          child: Center(
+                            child: Icon(Icons.room, size: 50, color: Colors.grey),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(room['roomName'] ?? 'Room',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text("Reserved: ${room['time'] ?? 'N/A'}"),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );

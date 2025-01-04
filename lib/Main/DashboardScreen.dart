@@ -57,19 +57,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // Calculate total cost for the order
-  // Calculate total cost for the order
   double _calculateTotalCost(Map<String, dynamic> bookingOrder) {
     double totalCost = 0;
     if (bookingOrder['mealId'] != null) {
       totalCost = bookingOrder['mealId'].fold(0.0, (sum, meal) {
-        double price = double.tryParse(meal['meal']['price'].toString()) ?? 0.0; // Get meal price
+        double price = double.tryParse(meal['meal']!['price'].toString()) ?? 0.0; // Get meal price
         int quantity = int.tryParse(meal['quantity'].toString()) ?? 0; // Get meal quantity
         return sum + (price * quantity); // Add price * quantity to the sum
       });
     }
     return totalCost;
   }
-
 
   // Function to show booking details in an alert dialog
   void _showBookingDetails(Map<String, dynamic> bookingOrder) {
@@ -81,29 +79,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         return AlertDialog(
           title: Text(
-            bookingOrder['restaurantId']['name'] ?? 'Unknown Restaurant',
+            bookingOrder['restaurantId']?['name'] ?? 'Unknown Restaurant',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
           content: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Table: ${bookingOrder['tableId']['tableNumber']}'),
+                Text('Table: ${bookingOrder['tableId']?['tableNumber'] ?? 'Unknown Table'}'),
                 Text('Date: ${DateFormat('MM-dd-yyyy').format(bookingDate)}'),
                 Text('Time: ${bookingOrder['time']}'),
                 const SizedBox(height: 8),
-                ...bookingOrder['mealId'].map<Widget>((meal) {
+                ...bookingOrder['mealId']?.map<Widget>((meal) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 4.0),
                     child: Row(
                       children: [
                         Icon(Icons.fastfood, size: 18, color: Colors.green),
                         SizedBox(width: 8),
-                        Text('Meal: ${meal['meal']['name']} - Quantity: ${meal['quantity']}'),
+                        Text('Meal: ${meal['meal']?['name'] ?? 'Unknown Meal'} - Quantity: ${meal['quantity']}'),
                       ],
                     ),
                   );
-                }).toList(),
+                }).toList() ??
+                    [],
                 const SizedBox(height: 8),
                 Text(
                   'Total Cost: ${totalCost.toStringAsFixed(2)} EGP',
@@ -193,7 +192,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           width: 100, // Constrain image width
                           height: 100, // Constrain image height
                           color: Colors.grey,
-                          child: bookingOrder['restaurantId']['profileImage']?['secure_url'] != null
+                          child: bookingOrder['restaurantId']?['profileImage']?['secure_url'] != null
                               ? Image.network(
                             '${bookingOrder['restaurantId']['profileImage']['secure_url']}',
                             fit: BoxFit.cover, // Ensure image fits within the constraints
@@ -209,13 +208,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              bookingOrder['restaurantId']['name'] ?? 'Unknown',
+                              bookingOrder['restaurantId']?['name'] ?? 'Unknown',
                               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                               overflow: TextOverflow.ellipsis, // Prevents text overflow
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Table: ${bookingOrder['tableId']['tableNumber']}',
+                              'Table: ${bookingOrder['tableId']?['tableNumber'] ?? 'Unknown Table'}',
                               style: const TextStyle(fontSize: 16),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -229,7 +228,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               style: const TextStyle(fontSize: 14, color: Colors.grey),
                             ),
                             const SizedBox(height: 8),
-                            ...bookingOrder['mealId'].map<Widget>((meal) {
+                            ...bookingOrder['mealId']?.map<Widget>((meal) {
                               return Padding(
                                 padding: const EdgeInsets.only(top: 4.0),
                                 child: Row(
@@ -239,7 +238,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'Order details ${meal['meal']['name']} - Quantity: ${meal['quantity']}',
+                                        'Order details ${meal['meal']?['name'] ?? 'Unknown Meal'} - Quantity: ${meal['quantity']}',
                                         style: const TextStyle(fontSize: 14),
                                         overflow: TextOverflow.ellipsis, // Prevents text overflow
                                       ),
@@ -247,7 +246,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ],
                                 ),
                               );
-                            }).toList(),
+                            }).toList() ??
+                                [],
                             const SizedBox(height: 8),
                             Text(
                               'Total: ${totalCost.toStringAsFixed(2)} EGP',
@@ -263,8 +263,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ],
                 ),
-              )
-
+              ),
             ),
           );
         },
