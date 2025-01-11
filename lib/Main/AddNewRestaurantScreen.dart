@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:seatview/API/ownerservice.dart';
+import 'package:seatview/Main/MainScreen.dart';
 import 'package:seatview/model/user.dart';
 
 class AddNewRestaurantScreen extends StatefulWidget {
@@ -15,12 +17,13 @@ class _AddNewRestaurantScreenState extends State<AddNewRestaurantScreen> {
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _openingHoursController = TextEditingController();
-  final TextEditingController _categoriesController = TextEditingController();
 
   bool _isSubmitting = false;
   File? _profileImage;
   File? _layoutImage;
   List<File> _galleryImages = [];
+  final List<String> _categories = ['drinks', 'desserts', 'meals'];
+  List<String> _selectedCategories = [];
 
   final OwnerService _ownerService = OwnerService();
 
@@ -52,15 +55,34 @@ class _AddNewRestaurantScreenState extends State<AddNewRestaurantScreen> {
     });
   }
 
+  // Debugging function to print all form values
+  void _printFormData() {
+    print("Restaurant Name: ${_nameController.text.trim()}");
+    print("Address: ${_addressController.text.trim()}");
+    print("Phone: ${_phoneController.text.trim()}");
+    print("Opening Hours: ${_openingHoursController.text.trim()}");
+    print("Selected Categories: $_selectedCategories");
+    print("Profile Image: ${_profileImage != null ? _profileImage!.path : 'None'}");
+    print("Layout Image: ${_layoutImage != null ? _layoutImage!.path : 'None'}");
+    print("Gallery Images: ${_galleryImages.map((image) => image.path).join(', ')}");
+  }
+
   // Submit restaurant data
   Future<void> _submitRestaurantData() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final String? token = userProvider.token;
 
     if (token == null) {
-      // Handle error if token is not available
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("User is not authenticated"),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
+
+    if (_selectedCategories.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Please select at least one category."),
         backgroundColor: Colors.red,
       ));
       return;
@@ -71,33 +93,53 @@ class _AddNewRestaurantScreenState extends State<AddNewRestaurantScreen> {
     });
 
     try {
-      await _ownerService.submitRestaurantData(
+      // Step 1: Submit restaurant details
+      await _ownerService.submitRestaurantDetails(
         token: token,
         name: _nameController.text.trim(),
         address: _addressController.text.trim(),
         phone: _phoneController.text.trim(),
         openingHours: _openingHoursController.text.trim(),
-        categories: _categoriesController.text.trim().split(','),
-        profileImage: _profileImage,
-        layoutImage: _layoutImage,
-        galleryImages: _galleryImages,
-        onSuccess: () {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("Restaurant added successfully!"),
-            backgroundColor: Colors.green,
-          ));
+        categories: _selectedCategories,
+        onSuccess: (restaurantId) async {
+          // Step 2: Submit images
+          await _ownerService.submitRestaurantImages(
+            token: token,
+            restaurantId: restaurantId,
+            profileImage: _profileImage,
+            layoutImage: _layoutImage,
+            galleryImages: _galleryImages,
+            onSuccess: () {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text("Restaurant added successfully!"),
+                backgroundColor: Colors.green,
+              ));
 
-          // Clear input fields after successful submission
-          _nameController.clear();
-          _addressController.clear();
-          _phoneController.clear();
-          _openingHoursController.clear();
-          _categoriesController.clear();
-          setState(() {
-            _profileImage = null;
-            _layoutImage = null;
-            _galleryImages.clear();
-          });
+              // Clear input fields after successful submission
+              _nameController.clear();
+              _addressController.clear();
+              _phoneController.clear();
+              _openingHoursController.clear();
+              setState(() {
+                _profileImage = null;
+                _layoutImage = null;
+                _galleryImages.clear();
+                _selectedCategories.clear();
+              });
+
+              // Navigate to the MainScreen
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => MainScreen(userRole: 'restaurantOwner',)),
+              );
+            },
+            onError: (error) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(error),
+                backgroundColor: Colors.red,
+              ));
+            },
+          );
         },
         onError: (error) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -118,6 +160,8 @@ class _AddNewRestaurantScreenState extends State<AddNewRestaurantScreen> {
     }
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -128,7 +172,6 @@ class _AddNewRestaurantScreenState extends State<AddNewRestaurantScreen> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
-          scrollDirection: Axis.vertical,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -154,14 +197,29 @@ class _AddNewRestaurantScreenState extends State<AddNewRestaurantScreen> {
                 decoration: InputDecoration(labelText: "Opening Hours"),
               ),
               // Categories
-              TextField(
-                controller: _categoriesController,
-                decoration: InputDecoration(
-                  labelText: "Categories (comma-separated, e.g., desserts,drinks)",
-                ),
+              // Categories selection
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _categories.map((category) {
+                  return CheckboxListTile(
+                    title: Text(category),
+                    value: _selectedCategories.contains(category),
+                    onChanged: (isChecked) {
+                      setState(() {
+                        if (isChecked == true) {
+                          _selectedCategories.add(category);
+                        } else {
+                          _selectedCategories.remove(category);
+                        }
+                      });
+                      // Debugging: Print the updated selected categories
+                      print("Updated selected categories: $_selectedCategories");
+                    },
+                  );
+                }).toList(),
               ),
-              SizedBox(height: 20),
 
+              SizedBox(height: 20),
               // Image selection buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -188,15 +246,18 @@ class _AddNewRestaurantScreenState extends State<AddNewRestaurantScreen> {
                   ),
                 ],
               ),
+              ElevatedButton(
+                onPressed: ()async{
+                  final userProvider = Provider.of<UserProvider>(context, listen: false);
+                  await userProvider.logout();
+                  await userProvider.checkUserSession();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                ),
+                child: Text("Submit"),
+              ),
               SizedBox(height: 20),
-
-              // Display selected images
-              if (_profileImage != null) Text("Profile image selected"),
-              if (_layoutImage != null) Text("Layout image selected"),
-              if (_galleryImages.isNotEmpty) Text("Gallery images selected"),
-
-              SizedBox(height: 20),
-
               // Submit button
               _isSubmitting
                   ? Center(child: CircularProgressIndicator())

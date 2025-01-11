@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+
+import 'package:flutter/material.dart';
+import 'package:seatview/Components/theme.dart';
+
 class MealCardWidget extends StatelessWidget {
   final String mealName;
   final String mealImage;
@@ -21,79 +25,64 @@ class MealCardWidget extends StatelessWidget {
     return GestureDetector(
       onTap: () => onTap(),
       child: Card(
-        elevation: 8,  // Increased elevation for a prominent floating effect
+        elevation: 8,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),  // Rounded corners
+          borderRadius: BorderRadius.circular(16),
         ),
-        shadowColor: Colors.black.withOpacity(0.2),  // Add a subtle shadow color
+        shadowColor: Colors.black.withOpacity(0.2),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Meal image with circular border for better style, with reduced height
             ClipRRect(
               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               child: Image.network(
                 mealImage,
-                height: 120, // Reduced image height further to avoid overflow
+                height: 120,
                 width: double.infinity,
                 fit: BoxFit.cover,
               ),
             ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-              child: Text(
-                mealName,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,  // Slightly smaller font size
-                  color: Colors.black87,
-                ),
-                maxLines: 1,  // Limit text to one line
-                overflow: TextOverflow.ellipsis,  // Ellipsis when text overflows
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-              child: Text(
-                'Price: ${mealPrice.toStringAsFixed(2)} L.E',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.deepOrange,
-                  fontSize: 14,  // Slightly smaller font size for price
-                ),
-              ),
-            ),
-
-            // "Add to Order" button with a rectangular shape and a better icon
-            Padding(
-              padding: const EdgeInsets.all(8.0),  // Reduced padding to avoid overflow
-              child: Align(
-                alignment: Alignment.centerRight,  // Align the button to the right
-                child: Container(
-                  width: 120,  // Set width for the button
-                  height: 40,  // Set height for the button
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(20),  // Rounded corners for the button
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                child: Text(
+                  mealName,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Theme.of(context).colorScheme.onBackground,
                   ),
-                  child: TextButton.icon(
-                    onPressed: () => onAddToOrder(),
-                    icon: Icon(Icons.add_shopping_cart, size: 18, color: Colors.white),  // Smaller icon size
-                    label: Text(
-                      'Add',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      backgroundColor: Colors.green,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),  // Rounded corners
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: Row(
+                children: [
+                  // Price Text with proper spacing
+                  Expanded(
+                    child: Text(
+                      'Price: ${mealPrice.toStringAsFixed(2)} L.E',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[500],  // Gray color for the price
+                        fontSize: 12,
                       ),
                     ),
                   ),
-                ),
+                  // Add Button Icon with a cleaner, more meaningful icon
+                  IconButton(
+                    onPressed: () => onAddToOrder(),
+                    icon: Icon(
+                      Icons.add_circle_outlined,  // A more specific "add to cart" icon
+                      color: Theme.of(context).primaryColor,  // Primary color for the icon
+                      size: 24,  // Adjusted icon size for better visibility
+                    ),
+                    splashRadius: 24,  // Optional: adjust the splash radius
+                  ),
+                ],
               ),
             ),
           ],
@@ -108,12 +97,14 @@ class CheckoutMealCardWidget extends StatelessWidget {
   final String mealName;
   final String mealImage;
   final double mealPrice;
+  final int quantity; // Add quantity parameter
   final Function onRemove;
 
   const CheckoutMealCardWidget({
     required this.mealName,
     required this.mealImage,
     required this.mealPrice,
+    required this.quantity, // Receive quantity as a parameter
     required this.onRemove,
     Key? key,
   }) : super(key: key);
@@ -124,7 +115,7 @@ class CheckoutMealCardWidget extends StatelessWidget {
       elevation: 6,
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppTheme.borderRadius, // Apply border radius from theme
       ),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -148,29 +139,36 @@ class CheckoutMealCardWidget extends StatelessWidget {
                 children: [
                   Text(
                     mealName,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Price: ${mealPrice.toStringAsFixed(2)} L.E',
+                    'Price: ${(mealPrice * quantity).toStringAsFixed(2)} L.E', // Total price based on quantity
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.deepOrange,
+                      color: AppTheme.primaryColor, // Use primaryColor from theme
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 6),
+                  Text(
+                    'Quantity: $quantity', // Display quantity
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[600], // Gray color for the quantity
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
             // Remove Button
             IconButton(
               onPressed: () => onRemove(),
-              icon: const Icon(Icons.remove_circle, color: Colors.redAccent),
+              icon: Icon(Icons.remove_circle, color: AppTheme.secondaryColor), // Use secondaryColor from theme
             ),
           ],
         ),

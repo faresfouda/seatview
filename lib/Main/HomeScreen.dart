@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +10,7 @@ import 'package:seatview/Main/RestaurantAboutScreen.dart';
 import 'package:seatview/model/restaurant.dart';
 import 'package:seatview/API/restaurants_service.dart';
 import 'package:seatview/model/user.dart';
+import 'package:seatview/Components/theme.dart'; // Import theme
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -19,13 +21,16 @@ class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
   Timer? _timer;
   int _currentIndex = 0;
+  bool _isLoading = true;
+  bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
-    // Fetch restaurants once the widget tree is built
+    // Fetch restaurants and favorites once the widget tree is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<RestaurantProvider>(context, listen: false).fetchRestaurants();
+      _fetchRestaurants();
+      _fetchFavorites();
     });
 
     // Start the automatic scrolling
@@ -34,11 +39,53 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // Fetch favorites from the provider
+  void _fetchFavorites() async {
+    try {
+      final favoritesProvider = Provider.of<FavoritesProvider>(context, listen: false);
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final userToken = userProvider.token;
+
+      if (userToken != null) {
+        await favoritesProvider.getFavorites(userToken);
+      } else {
+        // Handle token error or no user logged in
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('You need to log in to view your favorites!')),
+        );
+      }
+    } catch (error) {
+      setState(() {
+        _hasError = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load favorites: $error')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
     _timer?.cancel(); // Stop the timer when the widget is disposed
     super.dispose();
+  }
+
+  // Existing code for fetching restaurants and scrolling items
+  void _fetchRestaurants() async {
+    try {
+      final restaurantProvider = Provider.of<RestaurantProvider>(context, listen: false);
+      await restaurantProvider.fetchRestaurants();
+      setState(() {
+        _isLoading = false;
+        _hasError = false;
+      });
+    } catch (error) {
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
   }
 
   void _scrollToNextItem() {
@@ -75,8 +122,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: restaurants.isEmpty
+        child: _isLoading
             ? Center(child: CircularProgressIndicator())
+            : _hasError
+            ? Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Error loading restaurants.'),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: _fetchRestaurants,
+                child: Text('Try Again'),
+              ),
+            ],
+          ),
+        )
             : SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Padding(
@@ -88,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Restaurants',
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
@@ -96,18 +157,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       onPressed: () {
                         Navigator.pushNamed(context, 'RestaurantsScreen');
                       },
-                      child: const Text('View More', style: TextStyle(color: Colors.red)),
+                      child: Text(
+                        'View More',
+                        style: TextStyle(color: AppTheme.primaryColor),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 // Horizontal ListView for Restaurants
                 Container(
                   height: 252,
                   child: ListView.builder(
                     controller: _scrollController,
                     scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
+                    physics: BouncingScrollPhysics(),
                     shrinkWrap: true,
                     itemCount: restaurants.length,
                     itemBuilder: (context, index) {
@@ -115,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       return Container(
                         width: 380,
-                        margin: const EdgeInsets.only(right: 10),
+                        margin: EdgeInsets.only(right: 10),
                         child: RestaurantCard(
                           imageUrl: restaurant.profileImage,
                           title: restaurant.name,
@@ -124,27 +188,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           reviewsCount: 10, // Placeholder
                           onFavoritePressed: () async {
                             final token = userProvider.token;
-                            print(token);
 
                             if (token != null) {
                               try {
                                 await favoritesProvider.toggleFavorite(restaurant.id, token);
-                                // Notify user of success
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('${restaurant.name} favorite status updated!')),
-
                                 );
-
                               } catch (error) {
-                                // Notify user of failure
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Failed to update favorite: $error')),
                                 );
                               }
                             } else {
-                              // Notify user to log in
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('You need to log in first!')),
+                                SnackBar(content: Text('You need to log in first!')),
                               );
                             }
                           },
@@ -154,12 +212,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                 ),
-                const SizedBox(height: 15),
-                const Text(
+                SizedBox(height: 15),
+                Text(
                   'Food Categories',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -194,14 +252,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                // "Best View" Section
-                const SizedBox(height: 20),
-                const Text(
+                SizedBox(height: 20),
+                Text(
                   'Best View',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Container(
                   height: 110, // Adjusted height to ensure space for content
                   decoration: BoxDecoration(
@@ -217,6 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       final firstImage = restaurant.galleryImages.isNotEmpty
                           ? restaurant.galleryImages[0]
                           : ''; // Use a default image or an empty string if no image
+
                       final rating = restaurant.avgRating.toStringAsFixed(2) ?? 0;
                       final bookedTimes = 0; // Placeholder for the number of booked tables
 
@@ -268,7 +325,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                       'Table with Ocean View', // Placeholder title
                                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                     ),
-                                    Text('Perfect spot to enjoy a meal while'),
+                                    Text(
+                                      'Perfect spots',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                     Text('Rating: $rating'),
                                     Text('Booked: $bookedTimes times'),
                                   ],
@@ -281,7 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
               ],
             ),
           ),
@@ -290,5 +351,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-

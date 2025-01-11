@@ -198,7 +198,7 @@ class _RestaurantBookingScreenState extends State<RestaurantBookingScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => BookingTime(
-                            selectedTable: selectedTableId,
+                            selectedTable: selectedTableNumber,
                             isOrder: true,
                             restaurant: widget.restaurant, selectedTableId: selectedTableId,
                           ),

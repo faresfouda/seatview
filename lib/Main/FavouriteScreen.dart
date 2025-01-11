@@ -17,8 +17,6 @@ class _FavouriteScreenState extends State<FavouriteScreen> {
   @override
   void initState() {
     super.initState();
-
-    // Fetch favorites when the widget is first created
     _fetchFavorites();
   }
 
@@ -27,7 +25,6 @@ class _FavouriteScreenState extends State<FavouriteScreen> {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final userToken = userProvider.token;
 
-    // Check if token is null or invalid
     if (userToken == null) {
       print("User token is null");
       setState(() {
@@ -36,27 +33,19 @@ class _FavouriteScreenState extends State<FavouriteScreen> {
       return;
     }
 
-    print("User token: $userToken");  // Debugging token
-
-    if (favoritesProvider.favoriteRestaurantIds.isEmpty) {
-      try {
-        await favoritesProvider.getFavorites(userToken);
-        setState(() {
-          isLoading = false;
-        });
-      } catch (error) {
-        setState(() {
-          isLoading = false;
-        });
-        // Handle error (e.g., show a snackbar or dialog)
-      }
-    } else {
+    // Fetch the favorites using the provider's method
+    try {
+      await favoritesProvider.fetchFavorites(userToken);
       setState(() {
         isLoading = false;
       });
+    } catch (error) {
+      setState(() {
+        isLoading = false;
+      });
+      // Handle error (e.g., show a snackbar or dialog)
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -64,34 +53,21 @@ class _FavouriteScreenState extends State<FavouriteScreen> {
     final userProvider = Provider.of<UserProvider>(context);
     final userToken = userProvider.token;
 
-    // Get the list of favorite restaurant IDs
     final favoriteRestaurantIds = favoritesProvider.favoriteRestaurantIds;
-
-    // Debug print to check the list of favorite restaurant IDs
-    print('Favorite Restaurant IDs: $favoriteRestaurantIds');
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Favorites',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Favorites', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : favoriteRestaurantIds.isEmpty
-          ? Center(
-        child: Text(
-          "No Favorites Added",
-          style: TextStyle(fontSize: 16),
-        ),
-      )
+          ? Center(child: Text("No Favorites Added", style: TextStyle(fontSize: 16)))
           : ListView.builder(
         itemCount: favoriteRestaurantIds.length,
         itemBuilder: (context, index) {
-          // Fetch restaurant details using the ID
           final restaurantId = favoriteRestaurantIds[index];
           final restaurant = Provider.of<RestaurantProvider>(context)
               .restaurants
@@ -112,9 +88,7 @@ class _FavouriteScreenState extends State<FavouriteScreen> {
           );
 
           if (restaurant.id.isEmpty) {
-            return ListTile(
-              title: Text('Restaurant not found'),
-            );
+            return ListTile(title: Text('Restaurant not found'));
           }
 
           return Padding(
@@ -127,18 +101,13 @@ class _FavouriteScreenState extends State<FavouriteScreen> {
               reviewsCount: 23, // Placeholder for review count
               onFavoritePressed: () {
                 if (userToken != null) {
-                  // Call API to remove from favorites using the token
                   favoritesProvider.toggleFavorite(restaurant.id, userToken);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${restaurant.name} removed from favorites!'),
-                    ),
+                    SnackBar(content: Text('${restaurant.name} removed from favorites!')),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Please log in to manage favorites.'),
-                    ),
+                    SnackBar(content: Text('Please log in to manage favorites.')),
                   );
                 }
               },
@@ -149,5 +118,4 @@ class _FavouriteScreenState extends State<FavouriteScreen> {
       ),
     );
   }
-
 }

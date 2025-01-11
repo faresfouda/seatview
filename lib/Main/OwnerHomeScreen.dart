@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:seatview/Main/AddVipRoomScreen.dart';
 import 'package:seatview/model/user.dart';
@@ -27,21 +28,26 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
   Future<void> fetchOwnerData() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final token = userProvider.token ?? '';
+    final restaurantId = userProvider.user?.restaurant ?? '';
 
-    if (token.isEmpty) {
-      print('Token is null or empty');
+    if (token.isEmpty || restaurantId.isEmpty) {
+      print('Token or restaurant ID is null or empty');
       setState(() {
         hasError = true;
       });
       return;
     }
 
+    final today = DateTime.now();
+    final formattedDate = DateFormat('MM-dd-yyyy').format(today);  // Updated format
+
+    // Updated reservations URL with today's date
     final reservationsUrl = Uri.parse(
-        'https://restaurant-reservation-sys.vercel.app/reservations/restaurant/67769fff29bc3a6e219576c2');
+        'https://restaurant-reservation-sys.vercel.app/reservations/restaurant/$restaurantId/day?date=$formattedDate');
     final reviewsUrl = Uri.parse(
-        'https://restaurant-reservation-sys.vercel.app/reviews/restaurant/67769fff29bc3a6e219576c2');
+        'https://restaurant-reservation-sys.vercel.app/reviews/restaurant/$restaurantId');
     final vipRoomsUrl = Uri.parse(
-        'https://restaurant-reservation-sys.vercel.app/vip-rooms/restaurant/67769fff29bc3a6e219576c2');
+        'https://restaurant-reservation-sys.vercel.app/vip-rooms/restaurant/$restaurantId');
 
     try {
       final headers = {'token': '$token'};
@@ -81,6 +87,47 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
     }
   }
 
+
+  Future<void> updateReservationStatus(String reservationId, String newStatus) async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final token = userProvider.token ?? '';
+    final restaurantId = userProvider.user?.restaurant ?? '';
+
+    if (token.isEmpty || restaurantId.isEmpty) {
+      print('Token or restaurant ID is null or empty');
+      setState(() {
+        hasError = true;
+      });
+      return;
+    }
+
+    final url = Uri.parse(
+        'https://restaurant-reservation-sys.vercel.app/reservations/$reservationId');
+    final headers = {'token': '$token'};
+    final body = json.encode({'status': newStatus});
+
+    try {
+      final response = await http.put(url, headers: headers, body: body);
+      if (response.statusCode == 200) {
+        print('Reservation status updated');
+        fetchOwnerData();  // Refresh the data after updating
+      } else {
+        print('Failed to update reservation status: ${response.statusCode}');
+        setState(() {
+          hasError = true;
+        });
+      }
+    } catch (e) {
+      print('Error updating reservation status: $e');
+      setState(() {
+        hasError = true;
+      });
+    }
+  }
+
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,17 +136,9 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
           children: [
             Icon(Icons.restaurant_menu, color: Colors.white),
             SizedBox(width: 8),
-            Text("Restaurant Name"),
+            Text("Restaurant - Home"),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.settings),
-            onPressed: () {
-              // Navigate to Settings
-            },
-          ),
-        ],
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
@@ -138,19 +177,32 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
                     title: Text(reservation['userId']['name'] ?? 'Unknown'),
                     subtitle: Text(
                         "Time: ${reservation['time']}\nGuests: ${reservation['tableId']['capacity']}"),
-                    trailing: Chip(
-                      label: Text(
-                        reservation['status'] ?? 'Pending',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      backgroundColor: reservation['status'] == 'Confirmed'
-                          ? Colors.green
-                          : Colors.orange,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Chip(
+                          label: Text(
+                            reservation['status'] ?? 'Pending',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          backgroundColor: reservation['status'] == 'Confirmed'
+                              ? Colors.green
+                              : Colors.orange,
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.edit),
+                          onPressed: () {
+                            // You can update the status here (e.g., change it to "Confirmed")
+                            updateReservationStatus(reservation['_id'], 'Confirmed');
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 );
               },
             ),
+
             SizedBox(height: 16),
 
             // Recent Reviews Section

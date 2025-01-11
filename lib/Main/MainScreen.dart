@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:motion_tab_bar_v2/motion-tab-bar.dart';
-import 'package:motion_tab_bar_v2/motion-tab-controller.dart';
+import 'package:bottom_navy_bar/bottom_navy_bar.dart';
+import 'package:provider/provider.dart';
+import 'package:seatview/Main/AddNewRestaurantScreen.dart';
 import 'package:seatview/Main/DashboardScreen.dart';
 import 'package:seatview/Main/HomeScreen.dart';
 import 'package:seatview/Main/InventoryManagementScreen.dart';
@@ -10,6 +11,8 @@ import 'package:seatview/Main/FavouriteScreen.dart';
 import 'package:seatview/Main/ReservationsScreen.dart';
 import 'package:seatview/Main/SearchScreen.dart';
 import 'package:seatview/Main/UpdateRestaurantScreen.dart';
+import 'package:seatview/Components/theme.dart';
+import 'package:seatview/model/user.dart'; // Import your custom theme
 
 class MainScreen extends StatefulWidget {
   final String userRole; // Accept user role as a parameter
@@ -20,16 +23,37 @@ class MainScreen extends StatefulWidget {
   _MainScreenState createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateMixin {
-  MotionTabBarController? _motionTabBarController;
+class _MainScreenState extends State<MainScreen> {
+  late int _currentIndex;
   late List<Widget> _screens;
+  bool _isLoading = false;  // Add a loading state for the account deletion process
+  bool _isProfileLoading = true; // Loading state for profile data
 
   @override
   void initState() {
     super.initState();
-    print('Role: ${widget.userRole}');
 
-    // Define screens based on user role
+    // Log the user role and token for debugging
+    print('Role: ${widget.userRole}');
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userToken = userProvider.token;
+    print('User Token: $userToken');
+
+    // Use a post-frame callback to safely interact with the widget tree
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchProfileData(); // Fetch profile data after the first frame
+
+      // Redirect restaurant owners without a registered restaurant
+      if (userProvider.user?.role == 'restaurantOwner' && userProvider.user?.restaurant == null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => AddNewRestaurantScreen(),
+          ),
+        );
+      }
+    });
+
+    // Define screens based on the user role
     _screens = widget.userRole == 'restaurantOwner'
         ? [
       ReservationsScreen(),
@@ -45,41 +69,49 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
       ProfileScreen(),
     ];
 
-    _motionTabBarController = MotionTabBarController(
-      initialIndex: widget.userRole == 'restaurantOwner' ? 2 : 1, // Dynamic initial index
-      length: _screens.length, // Adjust based on the number of screens
-      vsync: this, // Pass the current State object for vsync
-    );
+    // Set initial index based on user role
+    _currentIndex = widget.userRole == 'restaurantOwner' ? 2 : 1;
   }
 
-  @override
-  void dispose() {
-    _motionTabBarController?.dispose(); // Safely dispose
-    super.dispose();
+// Method to fetch profile data
+  Future<void> _fetchProfileData() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    try {
+      await userProvider.getProfileData(); // Fetch the profile data using the provided token
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching profile data: $e')),
+      );
+    } finally {
+      // Update the loading state in all cases
+      setState(() {
+        _isProfileLoading = false;
+      });
+    }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _motionTabBarController!.index == 1
+      appBar: _currentIndex == 1 && widget.userRole != 'restaurantOwner'
           ? AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
         title: Padding(
           padding: const EdgeInsets.only(left: 140),
           child: Text(
-            widget.userRole == 'restaurantOwner'
-                ? 'SeatView - Owner'
-                : 'SeatView - Home',
-            style: const TextStyle(
-                color: Colors.black,
+            'SeatView - Home',
+            style: TextStyle(
+                color: AppTheme.primaryColor, // Use theme color
                 fontSize: 18,
                 fontWeight: FontWeight.bold),
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.red),
+            icon: Icon(Icons.search, color: AppTheme.primaryColor), // Use theme color
             onPressed: () {
               Navigator.push(
                 context,
@@ -90,37 +122,130 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
         ],
       )
           : null, // Hide AppBar for all other tabs
-      body: IndexedStack(
-        index: _motionTabBarController!.index,
-        children: _screens,
-      ),
-      bottomNavigationBar: MotionTabBar(
-        controller: _motionTabBarController, // Connect to MotionTabBarController
-        initialSelectedTab: widget.userRole == 'restaurantOwner' ? "Home" : "Home",
-        labels: widget.userRole == 'restaurantOwner'
-            ? ["Bookings", "Inventory", "Home", "My restaurant","Profile"]
-            : ["Bookings", "Home", "Favourite", "Profile"],
-        icons: widget.userRole == 'restaurantOwner'
-            ? [Icons.event, Icons.inventory, Icons.home,Icons.local_restaurant ,Icons.account_circle]
-            : [Icons.event, Icons.home, Icons.favorite, Icons.account_circle],
-        tabSize: 50,
-        tabBarHeight: 55,
-        textStyle: const TextStyle(
-          fontSize: 12,
-          color: Colors.black,
-          fontWeight: FontWeight.w500,
-        ),
-        tabIconColor: Colors.red[600],
-        tabIconSize: 28.0,
-        tabIconSelectedSize: 26.0,
-        tabSelectedColor: Colors.red[900],
-        tabIconSelectedColor: Colors.white,
-        tabBarColor: const Color(0xFFAFAFAF),
-        onTabItemSelected: (int value) {
+      body: _screens[_currentIndex],
+      bottomNavigationBar: BottomNavyBar(
+        selectedIndex: _currentIndex,
+        onItemSelected: (index) {
           setState(() {
-            _motionTabBarController!.index = value; // Update the selected tab
+            _currentIndex = index; // Update the selected index
           });
         },
+        items: widget.userRole == 'restaurantOwner'
+            ? [
+          BottomNavyBarItem(
+            icon: Icon(Icons.event, size: 30),
+            title: Text(
+              "Bookings",
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: AppTheme.primaryColor), // Use theme color
+            ),
+            activeColor: AppTheme.primaryColor,
+            inactiveColor: AppTheme.secondaryColor,
+          ),
+          BottomNavyBarItem(
+            icon: Icon(Icons.inventory, size: 30),
+            title: Text(
+              "Inventory",
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: AppTheme.primaryColor), // Use theme color
+            ),
+            activeColor: AppTheme.primaryColor,
+            inactiveColor: AppTheme.secondaryColor,
+          ),
+          BottomNavyBarItem(
+            icon: Icon(Icons.home, size: 30),
+            title: Text(
+              "Home",
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: AppTheme.primaryColor), // Use theme color
+            ),
+            activeColor: AppTheme.primaryColor,
+            inactiveColor: AppTheme.secondaryColor,
+          ),
+          BottomNavyBarItem(
+            icon: Icon(Icons.local_restaurant, size: 30),
+            title: Text(
+              "My Restaurant",
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: AppTheme.primaryColor), // Use theme color
+            ),
+            activeColor: AppTheme.primaryColor,
+            inactiveColor: AppTheme.secondaryColor,
+          ),
+          BottomNavyBarItem(
+            icon: Icon(Icons.account_circle, size: 30),
+            title: Text(
+              "Profile",
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: AppTheme.primaryColor), // Use theme color
+            ),
+            activeColor: AppTheme.primaryColor,
+            inactiveColor: AppTheme.secondaryColor,
+          ),
+        ]
+            : [
+          BottomNavyBarItem(
+            icon: Icon(Icons.event, size: 30),
+            title: Text(
+              "Bookings",
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: AppTheme.primaryColor), // Use theme color
+            ),
+            activeColor: AppTheme.primaryColor,
+            inactiveColor: AppTheme.secondaryColor,
+          ),
+          BottomNavyBarItem(
+            icon: Icon(Icons.home, size: 30),
+            title: Text(
+              "Home",
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: AppTheme.primaryColor), // Use theme color
+            ),
+            activeColor: AppTheme.primaryColor,
+            inactiveColor: AppTheme.secondaryColor,
+          ),
+          BottomNavyBarItem(
+            icon: Icon(Icons.favorite, size: 30),
+            title: Text(
+              "Favourite",
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: AppTheme.primaryColor), // Use theme color
+            ),
+            activeColor: AppTheme.primaryColor,
+            inactiveColor: AppTheme.secondaryColor,
+          ),
+          BottomNavyBarItem(
+            icon: Icon(Icons.account_circle, size: 30),
+            title: Text(
+              "Profile",
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: AppTheme.primaryColor), // Use theme color
+            ),
+            activeColor: AppTheme.primaryColor,
+            inactiveColor: AppTheme.secondaryColor,
+          ),
+        ],
+        backgroundColor: Colors.white,
+        iconSize: 30.0,
+        showElevation: true, // Adds shadow to the bar
       ),
     );
   }

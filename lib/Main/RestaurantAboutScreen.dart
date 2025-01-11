@@ -1,10 +1,9 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:seatview/Components/VIPRoomCard.dart';
 import 'package:seatview/Main/RestaurantBookingScreen.dart';
 import 'package:http/http.dart' as http;
-
+import 'package:seatview/Components/theme.dart';  // Import your custom theme
 
 class RestaurantAboutScreen extends StatelessWidget {
   final Map<String, dynamic> restaurant;
@@ -22,11 +21,12 @@ class RestaurantAboutScreen extends StatelessWidget {
       initialIndex: initialTabIndex,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('${restaurant['name']} '), // Correct key usage here
+          backgroundColor: Colors.white,
+          title: Text('${restaurant['name']} ',style: TextStyle(color: Colors.black),),
           bottom: TabBar(
-            labelColor: Colors.red[600],
-            indicatorColor: Colors.red[600],
-            unselectedLabelColor: Colors.grey,
+            labelColor: Theme.of(context).primaryColor, // Custom primary color from theme
+            indicatorColor: Theme.of(context).primaryColor,
+            unselectedLabelColor: Theme.of(context).textTheme.bodyLarge!.color, // Using text color from theme
             indicatorWeight: 3.0,
             tabs: [
               Tab(text: restaurant['aboutTabTitle'] ?? 'About'),
@@ -41,7 +41,7 @@ class RestaurantAboutScreen extends StatelessWidget {
             AboutTab(restaurant: restaurant),
             GalleryTab(restaurant: restaurant),
             TablesLocationTab(restaurant: restaurant),
-            VIPRoomsTab(restaurantId: restaurant['id'],),
+            VIPRoomsTab(restaurantId: restaurant['id']),
           ],
         ),
       ),
@@ -49,12 +49,10 @@ class RestaurantAboutScreen extends StatelessWidget {
   }
 }
 
-
 // About Tab
 class AboutTab extends StatelessWidget {
   final Map<String, dynamic> restaurant;
 
-  // Constructor accepting restaurant data
   const AboutTab({required this.restaurant});
 
   @override
@@ -64,29 +62,106 @@ class AboutTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Enhanced Profile Image
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              restaurant['profileImage'] ?? 'assets/placeholder.png',  // Using data from the restaurant object with fallback
-              height: 200,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Image.asset('assets/placeholder.png', fit: BoxFit.cover); // Fallback image
-              },
+            borderRadius: BorderRadius.circular(16), // Slightly more rounded corners
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Image.network(
+                restaurant['profileImage'] ?? 'assets/placeholder.png',
+                height: 250, // Increased height for better visibility
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Image.asset('assets/placeholder.png', fit: BoxFit.cover);
+                },
+              ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20), // More space around the image
+
+          // Restaurant Title
           Text(
-            restaurant['title'] ?? 'Restaurant Name Not Available', // Fallback if title is not available
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            restaurant['name'] ?? 'Restaurant Name Not Available',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).primaryColor,
+            ),
           ),
           const SizedBox(height: 8),
+
+          // Restaurant Description
+          // Text(
+          //   restaurant['description'] ?? 'Description not available.',
+          //   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          //     fontSize: 16,
+          //     color: Colors.black87,
+          //   ),
+          // ),
+          const SizedBox(height: 24), // More space before details
+
+          // Restaurant Details
           Text(
-            restaurant['description'] ?? 'Description not available.', // Fallback if description is not available
-            style: const TextStyle(fontSize: 16),
+            'Details',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).primaryColorDark,
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.location_on, color: Colors.red, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  restaurant['address'] ?? 'Address not available',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.phone, color: Colors.red, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  restaurant['phone'] ?? 'Phone number not available',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.access_time, color: Colors.red, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  restaurant['openingHours'] ?? 'Opening hours not available',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24), // More space before the button
+
+          // Centered Action Button
           Center(
             child: ElevatedButton(
               onPressed: () {
@@ -98,11 +173,12 @@ class AboutTab extends StatelessWidget {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                elevation: 5,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14), // Larger padding
+                elevation: 8, // Slightly higher elevation for more emphasis
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)), // More rounded corners
+                shadowColor: Colors.black.withOpacity(0.3),
               ),
               child: const Text(
                 'Book a Table',
@@ -116,6 +192,8 @@ class AboutTab extends StatelessWidget {
   }
 }
 
+
+
 // Gallery Tab
 class GalleryTab extends StatelessWidget {
   final Map<String, dynamic> restaurant;
@@ -124,7 +202,7 @@ class GalleryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var galleryImages = restaurant['galleryImages'] ?? []; // Fallback to an empty list if not available
+    var galleryImages = restaurant['galleryImages'] ?? [];
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: galleryImages.isEmpty
@@ -132,7 +210,7 @@ class GalleryTab extends StatelessWidget {
           : GridView.builder(
         shrinkWrap: true,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2, // Adjust based on screen width
+          crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
         ),
@@ -166,15 +244,15 @@ class TablesLocationTab extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
+          Text(
             'Restaurant Layout',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.network(
-              restaurant['layoutImage'] ?? 'assets/placeholder.png', // Use restaurant layout image with fallback
+              restaurant['layoutImage'] ?? 'assets/placeholder.png',
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
                 return Image.asset('assets/placeholder.png', fit: BoxFit.cover);
@@ -187,9 +265,7 @@ class TablesLocationTab extends StatelessWidget {
   }
 }
 
-
-
-
+// VIP Rooms Tab
 class VIPRoomsTab extends StatefulWidget {
   final String restaurantId;
 
@@ -217,7 +293,6 @@ class _VIPRoomsTabState extends State<VIPRoomsTab> {
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
-        print(response.body);
         final data = json.decode(response.body);
         setState(() {
           vipRooms = data['data'] ?? [];
@@ -225,13 +300,11 @@ class _VIPRoomsTabState extends State<VIPRoomsTab> {
         });
       } else {
         setState(() {
-          print(response.body);
           isLoading = false;
           errorMessage = 'Failed to load VIP rooms';
         });
       }
     } catch (e) {
-      print(e);
       setState(() {
         isLoading = false;
         errorMessage = 'An error occurred: $e';
@@ -250,9 +323,8 @@ class _VIPRoomsTabState extends State<VIPRoomsTab> {
       itemCount: vipRooms.length,
       itemBuilder: (context, index) {
         var room = vipRooms[index];
-        return VIPRoomCard(room: room); // Using VIPRoomCard for each room
+        return VIPRoomCard(room: room);
       },
     );
   }
 }
-

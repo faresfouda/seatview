@@ -14,6 +14,8 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   List<Map<String, dynamic>> bookingsOrders = [];
+  bool _isLoading = true; // Flag to indicate loading state
+  bool _hasError = false; // Flag to indicate if there was an error
 
   @override
   void initState() {
@@ -32,6 +34,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (token.isEmpty) {
       print('Token is missing');
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
       return;
     }
 
@@ -47,11 +53,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (data['status'] == 'success') {
         setState(() {
           bookingsOrders = List<Map<String, dynamic>>.from(data['reservations']);
+          _isLoading = false; // Set loading to false after data is loaded
         });
       } else {
+        setState(() {
+          _isLoading = false;
+          _hasError = true; // Set error state if response status is not success
+        });
         print('Error: ${data['message']}');
       }
     } else {
+      setState(() {
+        _isLoading = false;
+        _hasError = true; // Set error state if response fails
+      });
       print('Failed to load data');
     }
   }
@@ -101,8 +116,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   );
-                }).toList() ??
-                    [],
+                }).toList() ?? [],
                 const SizedBox(height: 8),
                 Text(
                   'Total Cost: ${totalCost.toStringAsFixed(2)} EGP',
@@ -161,8 +175,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: Text('Your Bookings'),
         backgroundColor: Colors.red[900],
       ),
-      body: bookingsOrders.isEmpty
-          ? const Center(child: Text('No bookings found'))
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator()) // Show loading indicator
+          : _hasError
+          ? Center( // Show try again button if there was an error
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Failed to load data, please try again.', textAlign: TextAlign.center),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _loadBookingsOrders,
+              child: Text('Try Again'),
+            ),
+          ],
+        ),
+      )
           : ListView.builder(
         itemCount: bookingsOrders.length,
         itemBuilder: (context, index) {
@@ -246,8 +274,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ],
                                 ),
                               );
-                            }).toList() ??
-                                [],
+                            }).toList() ?? [],
                             const SizedBox(height: 8),
                             Text(
                               'Total: ${totalCost.toStringAsFixed(2)} EGP',

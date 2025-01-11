@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:seatview/API/restaurants_service.dart';
 import 'package:seatview/Components/menu_provider.dart';
+import 'package:seatview/Components/reservation_provider.dart';
+import 'package:seatview/Components/theme.dart';
 import 'package:seatview/Login/Email_verification.dart';
 import 'package:seatview/Login/Forget_password.dart';
 import 'package:seatview/Login/Login.dart';
@@ -33,8 +35,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => FavoritesProvider()),
         ChangeNotifierProvider(create: (_) => userProvider),
         ChangeNotifierProvider(create: (_) => RestaurantProvider()),
-        ChangeNotifierProvider(create: (_) => MealProvider(),),
+        ChangeNotifierProvider(create: (_) => MealProvider()),
         ChangeNotifierProvider(create: (_) => TableProvider()),
+        ChangeNotifierProvider(create: (_) => ReservationStatusProvider(),)
       ],
       child: const MyApp(),
     ),
@@ -49,12 +52,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'SeatView',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: AppTheme.lightTheme(), // Apply the custom light theme here
       home: Consumer<UserProvider>(builder: (context, userProvider, child) {
         if (userProvider.isLoggedIn) {
           // Check if the user is confirmed
           if (userProvider.user?.isConfirmed == true) {
-            return MainScreen(userRole: userProvider.user!.role,);
+            return MainScreen(userRole: userProvider.user!.role);
           } else {
             return const EmailVerificationScreen();
           }
@@ -62,7 +65,8 @@ class MyApp extends StatelessWidget {
           return const LoginScreen();
         }
       }),
-      darkTheme: ThemeData.light(),
+      darkTheme: AppTheme.lightTheme(), // Apply custom dark theme here
+      themeMode: ThemeMode.system, // Switches based on system preference
       routes: _appRoutes(),
     );
   }
@@ -73,7 +77,7 @@ class MyApp extends StatelessWidget {
       'login': (context) => const LoginScreen(),
       'signup': (context) => const SignupScreen(),
       'forgot_password': (context) => const ForgotPasswordScreen(),
-      'home': (context) => MainScreen(userRole:userProvider.user?.role??''),
+      'home': (context) => MainScreen(userRole: userProvider.user?.role ?? ''),
       'verification': (context) => const EmailVerificationScreen(),
       'RestaurantAboutScreen': (context) => RestaurantAboutScreen(
             initialTabIndex: 0,

@@ -28,11 +28,16 @@ class Meal {
       name: json['name'] ?? '',
       description: json['desc'] ?? '',
       price: (json['price'] ?? 0).toDouble(),
-      imageUrl: json['image']['secure_url'] ?? '',
-      imagePublicId: json['image']['public_id'] ?? '',
+      imageUrl: json['image'] != null && json['image']['secure_url'] != null
+          ? json['image']['secure_url']
+          : 'https://i.pinimg.com/736x/f1/ae/2c/f1ae2cfe01f039a354c1d15238035612.jpg', // Fallback to an empty string if image or URL is null
+      imagePublicId: json['image'] != null && json['image']['public_id'] != null
+          ? json['image']['public_id']
+          : '', // Fallback to an empty string
       quantity: json['quantity'] ?? 1, // Set the quantity from the JSON if available
     );
   }
+
 }
 
 
@@ -85,15 +90,35 @@ class MealProvider with ChangeNotifier {
 
   // Add meal to the order
   void addMealToOrder(Meal meal) {
-    _orderedMeals.add(meal);
-    _totalCost += meal.price ?? 0.0;
+    // Check if the meal already exists in the order
+    final existingMealIndex = _orderedMeals.indexWhere((m) => m.id == meal.id);
+    if (existingMealIndex >= 0) {
+      // Increase quantity if meal already exists
+      _orderedMeals[existingMealIndex].quantity++;
+    } else {
+      // Add as a new item
+      _orderedMeals.add(meal);
+    }
+
+    // Update total cost
+    _totalCost += meal.price;
     notifyListeners();
   }
 
   // Remove meal from the order
   void removeFromOrder(Meal meal) {
-    _orderedMeals.remove(meal);
-    _totalCost -= meal.price ?? 0.0;
+    final existingMealIndex = _orderedMeals.indexWhere((m) => m.id == meal.id);
+    if (existingMealIndex >= 0) {
+      if (_orderedMeals[existingMealIndex].quantity > 1) {
+        // Decrease quantity if more than one
+        _orderedMeals[existingMealIndex].quantity--;
+        _totalCost -= meal.price;
+      } else {
+        // Remove meal if only one left
+        _totalCost -= _orderedMeals[existingMealIndex].price;
+        _orderedMeals.removeAt(existingMealIndex);
+      }
+    }
     notifyListeners();
   }
 
@@ -104,3 +129,4 @@ class MealProvider with ChangeNotifier {
     notifyListeners();
   }
 }
+

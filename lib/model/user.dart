@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:seatview/API/auth_service.dart'; // Import your auth service
-
+import 'package:http/http.dart' as http;
 
 class UserModel {
   final String id;
@@ -86,6 +86,8 @@ class ImageData {
 }
 
 
+
+
 class UserProvider with ChangeNotifier {
   static const String _tokenKey = 'userToken';
   static const String _userKey = 'userData';
@@ -100,7 +102,6 @@ class UserProvider with ChangeNotifier {
 
   // Getter for user role
   String? get role => _user?.role;
-
 
   // Check if user session exists
   Future<void> checkUserSession() async {
@@ -180,7 +181,37 @@ class UserProvider with ChangeNotifier {
     await prefs.remove(_userKey); // Remove user data from local storage
     notifyListeners(); // Notify listeners to update the UI or dependent components
   }
+
+  // Get profile data function
+  Future<void> getProfileData() async {
+    if (_token == null) {
+      throw Exception('No token found. Please log in.');
+    }
+
+    final url = Uri.parse('https://restaurant-reservation-sys.vercel.app/users/profile');
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'token': '$_token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final user = UserModel.fromJson(data['user']);
+        await setUserData(user, _token!); // Update user data with the fetched profile data
+        print('Profile data fetched successfully');
+      } else {
+        throw Exception('Failed to fetch profile data: ${response.body}');
+      }
+    } catch (e) {
+      print("Error fetching profile data: $e");
+      throw Exception('Error fetching profile data');
+    }
+  }
 }
+
 
 
 

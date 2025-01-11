@@ -5,9 +5,10 @@ import 'package:provider/provider.dart';
 import 'package:seatview/API/reservation_services.dart';
 import 'package:seatview/model/meal.dart';
 import 'package:seatview/Components/MealCardWidget.dart'; // Import the MealCardWidget
+import 'package:seatview/Components/theme.dart'; // Import your theme
 
 class CheckoutScreen extends StatefulWidget {
-  final DateTime selectedDate ;
+  final DateTime selectedDate;
   final TimeOfDay selectedTime;
   final Map<String, dynamic> restaurant;
   final String selectedTable;
@@ -38,7 +39,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Checkout'),
-        backgroundColor: Colors.deepOrange,
+        backgroundColor: AppTheme.primaryColor, // Use primaryColor from the theme
       ),
       body: Stack(
         children: [
@@ -83,6 +84,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         mealName: meal.name,
                         mealImage: meal.imageUrl,
                         mealPrice: meal.price ?? 0.0,
+                        quantity: meal.quantity, // Pass the quantity to the widget
                         onRemove: () {
                           menuProvider.removeFromOrder(meal); // Remove the meal from the order
                         },
@@ -90,6 +92,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     },
                   ),
                 ),
+
 
                 const SizedBox(height: 20),
 
@@ -99,7 +102,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     fontSize: 22,
-                    color: Colors.deepOrange,
+                    color: AppTheme.primaryColor, // Use primaryColor for total cost
                   ),
                 ),
                 const Spacer(),
@@ -172,17 +175,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         menuProvider.clearOrder();
                       }
                     },
-
-
-
                     child: const Text('Confirm Order'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepOrange,
-                      foregroundColor: Colors.black,
+                      backgroundColor: AppTheme.primaryColor, // Use primaryColor from the theme
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 24, vertical: 12),
-                      textStyle:
-                      Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       ),

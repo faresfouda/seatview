@@ -59,7 +59,8 @@ dependencies:
   dio:
   http_parser:
   flutter_rating_bar: ^4.0.0
-  persistent_bottom_nav_bar: ^6.2.1
+  bottom_navy_bar:
+  google_fonts: ^6.2.1
 
 
 

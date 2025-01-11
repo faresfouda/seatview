@@ -308,11 +308,32 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
                   margin: EdgeInsets.symmetric(vertical: 8.0),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundImage: NetworkImage(
-                          menuItem['image']['secure_url']),
+                      child: ClipOval(
+                        child: menuItem['image'] != null && menuItem['image']['secure_url'] != null
+                            ? Image.network(
+                          menuItem['image']['secure_url'],
+                          fit: BoxFit.cover,
+                          width: 50,
+                          height: 50,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.fastfood, // Fallback icon
+                              size: 30,
+                              color: Colors.grey,
+                            );
+                          },
+                        )
+                            : Icon(
+                          Icons.fastfood, // Fallback icon for null case
+                          size: 30,
+                          color: Colors.grey,
+                        ),
+                      ),
                     ),
+
+
                     title: Text(menuItem['name']),
-                    subtitle: Text("Price: \$${menuItem['price']}"),
+                    subtitle: Text("Price: ${menuItem['price']} L.E"),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

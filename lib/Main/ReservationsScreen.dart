@@ -1,9 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:seatview/Components/reservation_provider.dart';
+import 'package:seatview/Components/theme.dart';
+import 'package:seatview/model/user.dart';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import 'package:seatview/model/user.dart';
 
 class ReservationsScreen extends StatefulWidget {
   @override
@@ -11,21 +13,32 @@ class ReservationsScreen extends StatefulWidget {
 }
 
 class _ReservationsScreenState extends State<ReservationsScreen> {
-  Map<String, List<Map<String, String>>> weeklyReservations = {}; // Dynamic data map
-  bool isLoading = true; // Loading indicator
-  bool hasError = false; // Error indicator
-
+  Map<String, List<Map<String, dynamic>>> weeklyReservations = {};
+  bool isLoading = true;
+  bool hasError = false;
+  bool hasNoReservations = false;
 
   @override
   void initState() {
     super.initState();
-    fetchReservations(); // Fetch reservations from the API
+    fetchReservations();
   }
 
   Future<void> fetchReservations() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final token = userProvider.token ?? '';
-    final url = Uri.parse('https://restaurant-reservation-sys.vercel.app/reservations/restaurant/67769fff29bc3a6e219576c2');
+    final restaurantId = userProvider.user?.restaurant ?? '';
+
+    if (token.isEmpty || restaurantId.isEmpty) {
+      setState(() {
+        hasError = true;
+        isLoading = false;
+      });
+      return;
+    }
+
+    final url = Uri.parse(
+        'https://restaurant-reservation-sys.vercel.app/reservations/restaurant/$restaurantId');
 
     try {
       final response = await http.get(url, headers: {'token': token});
@@ -33,17 +46,26 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
         final data = json.decode(response.body);
         if (data['status'] == 'success') {
           List<dynamic> reservations = data['reservations'];
-          Map<String, List<Map<String, String>>> tempReservations = {};
+          Map<String, List<Map<String, dynamic>>> tempReservations = {};
 
-          // Parse reservations into a weekly format
+          if (reservations.isEmpty) {
+            setState(() {
+              hasNoReservations = true;
+              isLoading = false;
+            });
+            return;
+          }
+
           for (var reservation in reservations) {
-            String day = _getDayFromDate(reservation['date']); // Get day from date
-            tempReservations.putIfAbsent(day, () => []); // Initialize list if not present
-
+            String day = _getDayFromDate(reservation['date']);
+            tempReservations.putIfAbsent(day, () => []);
             tempReservations[day]?.add({
               'name': reservation['userId']['name'] ?? 'Unknown',
               'time': reservation['time'] ?? 'Unknown Time',
               'table': reservation['tableId']?['tableNumber'] ?? 'Unknown Table',
+              'mealId': reservation['mealId'] ?? [],
+              'status': reservation['status'] ?? 'Unknown Status',
+              'id': reservation['_id'] ?? '',
             });
           }
 
@@ -54,17 +76,19 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
         } else {
           setState(() {
             hasError = true;
+            isLoading = false;
           });
         }
       } else {
         setState(() {
           hasError = true;
+          isLoading = false;
         });
       }
     } catch (e) {
-      print('Error fetching reservations: $e');
       setState(() {
         hasError = true;
+        isLoading = false;
       });
     }
   }
@@ -72,9 +96,9 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
   String _getDayFromDate(String date) {
     try {
       final DateTime parsedDate = DateFormat('MM-dd-yyyy').parseStrict(date);
-      return DateFormat('EEEE').format(parsedDate); // Get day of the week
+      return DateFormat('EEEE').format(parsedDate);
     } catch (e) {
-      return 'Unknown Day'; // Fallback if parsing fails
+      return 'Unknown Day';
     }
   }
 
@@ -83,15 +107,22 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("All Reservations"),
-        backgroundColor: Colors.red[900],
+        backgroundColor: AppTheme.primaryColor,
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator()) // Show loading indicator
+          ? const Center(child: CircularProgressIndicator())
           : hasError
           ? const Center(
         child: Text(
           'Error loading reservations. Please try again.',
           style: TextStyle(color: Colors.red, fontSize: 16),
+        ),
+      )
+          : hasNoReservations
+          ? const Center(
+        child: Text(
+          "No reservations available.",
+          style: TextStyle(fontSize: 18, color: Colors.grey),
         ),
       )
           : ListView(
@@ -101,7 +132,6 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
               (entry) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Day Header
               Padding(
                 padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
                 child: Text(
@@ -123,18 +153,20 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
               )
                   : Column(
                 children: entry.value.map((reservation) {
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8.0),
-                    elevation: 3,
-                    child: ListTile(
-                      leading: const Icon(Icons.person, color: Colors.red),
-                      title: Text(
-                        reservation["name"]!,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                  return InkWell(
+                    onTap: () => showReservationDetails(context, reservation),
+                    child: Card(
+                      margin: const EdgeInsets.symmetric(vertical: 8.0),
+                      elevation: 3,
+                      child: ListTile(
+                        leading: const Icon(Icons.person, color: Colors.red),
+                        title: Text(
+                          reservation["name"]!,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                            "Time: ${reservation["time"]}\nTable: ${reservation["table"]}"),
                       ),
-                      subtitle: Text(
-                          "Time: ${reservation["time"]}\nTable: ${reservation["table"]}"),
-                      trailing: const Icon(Icons.event_seat, color: Colors.green),
                     ),
                   );
                 }).toList(),
@@ -146,4 +178,51 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
       ),
     );
   }
+
+  // Show reservation details method (as before)
+  void showReservationDetails(BuildContext context, Map<String, dynamic> reservation) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Container(
+          width: double.infinity, // Set width to infinity
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Reservation Details',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.red[600]),
+              ),
+              const SizedBox(height: 16),
+              Text("Name: ${reservation["name"]}"),
+              Text("Time: ${reservation["time"]}"),
+              Text("Table: ${reservation["table"]}"),
+              Text("Status: ${reservation["status"]}"),
+              const SizedBox(height: 16),
+              Text("Meals:"),
+              // Display meal details if available
+              if (reservation["mealId"] != null && reservation["mealId"].isNotEmpty)
+                ...reservation["mealId"].map<Widget>((meal) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Text(
+                      "${meal["meal"]["name"]} - \$${meal["meal"]["price"]} (Quantity: ${meal["quantity"]})",
+                    ),
+                  );
+                }).toList(),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 }

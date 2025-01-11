@@ -114,5 +114,37 @@ class FavoritesProvider with ChangeNotifier {
     }
   }
 
+  Future<void> fetchFavorites(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://restaurant-reservation-sys.vercel.app/users/favorites/'),
+        headers: {
+          'token': token,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+
+        if (data['data'] is List) {
+          final List<dynamic> favorites = data['data'];
+
+          _favoriteRestaurantIds.clear();
+          for (var restaurant in favorites) {
+            _favoriteRestaurantIds.add(restaurant['_id']);
+          }
+
+          notifyListeners();
+        } else {
+          print('Favorites data field is not a list');
+        }
+      } else {
+        print('Failed to load favorites: ${response.body}');
+      }
+    } catch (e) {
+      print('Error fetching favorites: $e');
+      rethrow;
+    }
+  }
 
 }

@@ -15,6 +15,31 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   XFile? _imageFile;
   bool _isLoading = false;  // Add a loading state for the account deletion process
+  bool _isProfileLoading = true; // Loading state for profile data
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch profile data when the screen is initialized
+    _fetchProfileData();
+  }
+
+  Future<void> _fetchProfileData() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    try {
+      await userProvider.getProfileData();  // Fetch the profile data using the provided token
+      setState(() {
+        _isProfileLoading = false; // Set loading to false once data is fetched
+      });
+    } catch (e) {
+      setState(() {
+        _isProfileLoading = false; // Set loading to false even on error
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching profile data: $e')),
+      );
+    }
+  }
 
   Future<void> _pickImage() async {
     final ImagePicker _picker = ImagePicker();
@@ -122,16 +147,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-
-
-
-
-
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
     final user = userProvider.user;
-    final token = userProvider.token;
 
     return Scaffold(
       appBar: AppBar(
@@ -146,8 +165,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         centerTitle: true,
       ),
-      body: user == null
-          ? const Center(child: CircularProgressIndicator())
+      body: _isProfileLoading
+          ? const Center(child: CircularProgressIndicator()) // Show a loading spinner until profile is loaded
           : SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Padding(
@@ -155,15 +174,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _buildProfileSection(user, userProvider),
+              _buildProfileSection(user!, userProvider),
               const SizedBox(height: 20),
               _buildSectionHeader('My Account'),
-              _buildAccountSettings(user, token, userProvider),
+              _buildAccountSettings(user, userProvider.token, userProvider),
               const SizedBox(height: 20),
               _buildSectionHeader('Others'),
-              _buildOtherSettings(userProvider, token),
-              if (_isLoading)  // Show a loading indicator while deleting the account
-                const Center(child: CircularProgressIndicator()),
+              _buildOtherSettings(userProvider, userProvider.token),
             ],
           ),
         ),
@@ -177,31 +194,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Stack(
             children: [
-              Consumer<UserProvider>(
-                builder: (context, userProvider, child) {
-                  final user = userProvider.user;
-
-                  // Debug print statement
-                  print('Profile Image URL: ${user?.image?.secureUrl}'); // Check the image URL being used
-
-                  return CircleAvatar(
-                    radius: 50,
-                    backgroundImage: user?.image?.secureUrl.isNotEmpty ?? false
-                        ? NetworkImage(user!.image!.secureUrl) // Use the new secure URL
-                        : const NetworkImage(
-                        'https://i.pinimg.com/474x/6d/10/74/6d107462bcc8f71fe80bb1cf6b0d3ab7.jpg'), // Default image
-                  );
-                },
-              )
-
-
-
-
-
-
-
-
-
+              Consumer<UserProvider>(builder: (context, userProvider, child) {
+                return CircleAvatar(
+                  radius: 50,
+                  backgroundImage: user.image?.secureUrl.isNotEmpty ?? false
+                      ? NetworkImage(user.image!.secureUrl)
+                      : const NetworkImage(
+                      'https://i.pinimg.com/474x/6d/10/74/6d107462bcc8f71fe80bb1cf6b0d3ab7.jpg'), // Default image
+                );
+              })
             ],
           ),
           const SizedBox(height: 10),
@@ -292,17 +293,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: const Text('Change Password'),
             onTap: () {
               Navigator.push(
-                  context,
-                  MaterialPageRoute(
+                context,
+                MaterialPageRoute(
                   builder: (context) => ChangePasswordScreen(
-                token: token,
-                onPasswordChanged: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Password has been updated.')));
-                },
-              ),
-              ));
+                    token: token,
+                    onPasswordChanged: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Password has been updated.')),
+                      );
+                    },
+                  ),
+                ),
+              );
             },
           ),
         ],
@@ -340,7 +342,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error signing out: $e')),
+                  SnackBar(content: Text('Error: $e')),
                 );
               }
             },
