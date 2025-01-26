@@ -121,6 +121,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final restaurants = restaurantProvider.restaurants;
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text('SeatView'),
+        backgroundColor: AppTheme.primaryColor,
+      ),
       body: SafeArea(
         child: _isLoading
             ? Center(child: CircularProgressIndicator())

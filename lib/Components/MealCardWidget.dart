@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-
-
-import 'package:flutter/material.dart';
 import 'package:seatview/Components/theme.dart';
 
 class MealCardWidget extends StatelessWidget {
@@ -29,7 +26,7 @@ class MealCardWidget extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        shadowColor: Colors.black.withOpacity(0.2),
+        shadowColor: Colors.black.withOpacity(0.5),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

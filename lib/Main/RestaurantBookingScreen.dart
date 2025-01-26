@@ -117,11 +117,11 @@ class _RestaurantBookingScreenState extends State<RestaurantBookingScreen> {
                   itemCount: tables.length,
                   itemBuilder: (context, index) {
                     final table = tables[index];
+                    final imageUrl = table['image']?['secure_url']; // Safely access the image URL
                     return GestureDetector(
                       onTap: () {
                         setState(() {
-                          selectedTableIndex =
-                              index; // Select the tapped table
+                          selectedTableIndex = index; // Select the tapped table
                         });
                       },
                       child: Card(
@@ -137,29 +137,75 @@ class _RestaurantBookingScreenState extends State<RestaurantBookingScreen> {
                             width: 2,
                           ),
                         ),
-                        child: ListTile(
-                          leading: const Icon(
-                            Icons.chair,
-                            color: Colors.red,
-                            size: 32,
-                          ),
-                          title: Text(
-                            'Table ${table['tableNumber']}',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text('Seats: ${table['capacity']}'),
-                          trailing: selectedTableIndex == index
-                              ? const Icon(
-                            Icons.check_circle,
-                            color: Colors.red,
-                          )
-                              : null,
+                        child: Column(
+                          children: [
+                            // Display Table Image
+                            imageUrl != null
+                                ? ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12),
+                              ),
+                              child: Image.network(
+                                imageUrl,
+                                height: 150, // Larger height for better visibility
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  height: 150,
+                                  color: Colors.grey[300],
+                                  child: const Icon(
+                                    Icons.error,
+                                    color: Colors.red,
+                                    size: 48,
+                                  ),
+                                ),
+                                loadingBuilder: (context, child, progress) {
+                                  if (progress == null) return child;
+                                  return Container(
+                                    height: 150,
+                                    color: Colors.grey[300],
+                                    child: const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            )
+                                : Container(
+                              height: 150,
+                              color: Colors.grey[300],
+                              child: const Icon(
+                                Icons.chair, // Fallback icon if no image is available
+                                color: Colors.red,
+                                size: 48,
+                              ),
+                            ),
+
+                            // Table Details
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: ListTile(
+                                title: Text(
+                                  'Table ${table['tableNumber']}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Text('Seats: ${table['capacity']}'),
+                                trailing: selectedTableIndex == index
+                                    ? const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.red,
+                                )
+                                    : null,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );
                   },
-                ),
+                )
+
+
               ),
 
             // Options for booking

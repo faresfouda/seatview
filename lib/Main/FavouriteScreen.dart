@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:seatview/API/restaurants_service.dart';
 import 'package:seatview/Components/RestaurantCard.dart';
+import 'package:seatview/Components/theme.dart';
 import 'package:seatview/Main/FavoritesProvider.dart';
 import 'package:seatview/model/restaurant.dart';
 import 'package:seatview/model/user.dart';
@@ -57,9 +58,8 @@ class _FavouriteScreenState extends State<FavouriteScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Favorites', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        elevation: 0,
+        title: Text('Your Favourites'),
+        backgroundColor: AppTheme.primaryColor,
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())

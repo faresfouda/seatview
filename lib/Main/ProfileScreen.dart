@@ -152,6 +152,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final userProvider = Provider.of<UserProvider>(context);
     final user = userProvider.user;
 
+    if (user == null) {
+      // Show a loading or error message if the user is null
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Profile'),
+          backgroundColor: Colors.white,
+          centerTitle: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -174,7 +186,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _buildProfileSection(user!, userProvider),
+              _buildProfileSection(user, userProvider),
               const SizedBox(height: 20),
               _buildSectionHeader('My Account'),
               _buildAccountSettings(user, userProvider.token, userProvider),
@@ -187,6 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
 
   Widget _buildProfileSection(UserModel user, UserProvider userProvider) {
     return Center(

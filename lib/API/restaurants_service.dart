@@ -118,94 +118,100 @@ class RestaurantProvider with ChangeNotifier {
     required File? layoutImage,
     required List<File> galleryImages,
   }) async {
-    print("Updating restaurant with ID: $restaurantId...");
-    _isLoading = true;
-    _errorMessage = null;
-
-    // Schedule state change after build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
-
     final url = 'https://restaurant-reservation-sys.vercel.app/restaurants/update/$restaurantId';
-    print("Making PUT request to $url...");
+
+    // Ensure required fields are valid
+    if (restaurantId.isEmpty || token.isEmpty) {
+      _handleError("Restaurant ID and token cannot be empty.");
+      return;
+    }
 
     try {
-      // Prepare the multipart request
+      // Log fields for debugging
+      _logFields(name, address, phone, openingHours);
+
       var request = http.MultipartRequest('PUT', Uri.parse(url))
         ..headers['token'] = token
         ..fields['name'] = name
         ..fields['address'] = address
         ..fields['phone'] = phone
-        ..fields['openingHours'] = openingHours;
+        ..fields['openingHourse'] = openingHours; // Matches backend typo
 
-      // Log request body (fields)
-      print("Request body:");
-      print("name: $name");
-      print("address: $address");
-      print("phone: $phone");
-      print("openingHours: $openingHours");
+      // Add images to request
+      await _addImagesToRequest(request, profileImage, layoutImage, galleryImages);
 
-      // Add images if selected
-      if (profileImage != null) {
-        var profileImageFile = await http.MultipartFile.fromPath(
-          'profileImage', profileImage.path,
-          contentType: MediaType('image', 'jpeg'),
-        );
-        request.files.add(profileImageFile);
-        print("Profile image: ${profileImage.path}");
-      }
-
-      if (layoutImage != null) {
-        var layoutImageFile = await http.MultipartFile.fromPath(
-          'layoutImage', layoutImage.path,
-          contentType: MediaType('image', 'jpeg'),
-        );
-        request.files.add(layoutImageFile);
-        print("Layout image: ${layoutImage.path}");
-      }
-
-      for (var image in galleryImages) {
-        var galleryImageFile = await http.MultipartFile.fromPath(
-          'galleryImages', image.path,
-          contentType: MediaType('image', 'jpeg'),
-        );
-        request.files.add(galleryImageFile);
-        print("Gallery image: ${image.path}");
-      }
-
+      // Send request
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
 
+      // Handle response
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = json.decode(responseBody);
-        print("Updated restaurant data: $data");
-        _restaurant = Restaurant.fromJson(data);
-        _restaurants = _restaurants.map((r) {
-          return r.id == restaurantId ? _restaurant! : r;
-        }).toList();
-
-        // Notify listeners after build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
+        print("Restaurant updated successfully.");
       } else {
-        _errorMessage = 'Failed to update restaurant';
-        print("Error: ${responseBody}");
-        // Notify listeners after build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
+        _handleError("Failed to update restaurant. Response: $responseBody");
       }
     } catch (e) {
-      _errorMessage = 'Error: $e';
-      print("Error while updating: $e");
-      // Notify listeners after build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      _handleError("Error updating restaurant: $e");
     }
   }
+
+// Log fields for debugging
+  void _logFields(String name, String address, String phone, String openingHours) {
+    print("Request body:");
+    print("name: $name");
+    print("address: $address");
+    print("phone: $phone");
+    print("openingHours: $openingHours");
+  }
+
+// Add images to the request
+  Future<void> _addImagesToRequest(
+      http.MultipartRequest request,
+      File? profileImage,
+      File? layoutImage,
+      List<File> galleryImages,
+      ) async {
+    await _addImageToRequest(request, 'profileImage', profileImage);
+    await _addImageToRequest(request, 'layoutImage', layoutImage);
+
+    if (galleryImages.isEmpty) {
+      print("No gallery images to upload.");
+    } else {
+      for (var image in galleryImages) {
+        await _addImageToRequest(request, 'galleryImages', image);
+      }
+    }
+  }
+
+// Helper function to add image to the request
+  Future<void> _addImageToRequest(
+      http.MultipartRequest request,
+      String fieldName,
+      File? image,
+      ) async {
+    if (image != null) {
+      String fileType = image.path.split('.').last.toLowerCase();
+      var imageFile = await http.MultipartFile.fromPath(
+        fieldName,
+        image.path,
+        contentType: MediaType('image', fileType),
+      );
+      request.files.add(imageFile);
+      print("$fieldName image: ${image.path}");
+    }
+  }
+
+// Handle errors by setting the error message and notifying listeners
+  void _handleError(String errorMessage) {
+    _errorMessage = errorMessage;
+    print("Error while updating: $errorMessage");
+
+    // Notify listeners after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
 
 
 

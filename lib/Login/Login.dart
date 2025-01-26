@@ -17,10 +17,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
+  final AuthService _authService = AuthService();
 
-  bool _isLoading = false; // State to show CircularProgressIndicator
-
-  final AuthService _authService = AuthService(); // Instance of AuthService
 
   @override
   void dispose() {
@@ -38,24 +37,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _checkSession() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     await userProvider.checkUserSession();
-
-    // if (userProvider.isLoggedIn) {
-    //   final user = userProvider.user;
-    //
-    //   // Check if the account is confirmed
-    //   // if (user != null && !user.isConfirmed) {
-    //   //   DefaultSnackbar.show(
-    //   //     context,
-    //   //     'Your account is not confirmed. Please verify your email.',
-    //   //     backgroundColor: Colors.orange,
-    //   //   );
-    //   //   // Navigate to email verification screen if needed
-    //   //   return;
-    //   // }
-    //
-    //   // Navigate to home screen if confirmed
-    //   // Navigator.pushReplacementNamed(context, 'home');
-    // }
   }
 
 
@@ -119,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
               }else {
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
-                    builder: (context) =>MainScreen(userRole: 'restaurantOwner') ,
+                    builder: (context) =>MainScreen(userRole: 'restaurantOwner',) ,
                   ),
                 );
               }
@@ -187,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 padding: const EdgeInsets.all(20.0),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(50),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Form(
                   key: _formKey,

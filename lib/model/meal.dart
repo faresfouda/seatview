@@ -48,15 +48,20 @@ class MealProvider with ChangeNotifier {
   bool _isLoading = false;
   List<Meal> _orderedMeals = [];
   double _totalCost = 0.0;
+  bool _hasError = false;
+  String _errorMessage = '';
 
   List<Meal> get meals => _meals;
   bool get isLoading => _isLoading;
   List<Meal> get orderedMeals => _orderedMeals;
   double get totalCost => _totalCost;
+  bool get hasError => _hasError;
+  String get errorMessage => _errorMessage;
 
   // Fetch meals data from API
   Future<void> fetchMeals(String restaurantId) async {
     _isLoading = true;
+    _hasError = false;
     notifyListeners();
 
     final url = 'https://restaurant-reservation-sys.vercel.app/meals/restaurant/$restaurantId';
@@ -80,8 +85,10 @@ class MealProvider with ChangeNotifier {
       } else {
         print('Failed to load data, Status code: ${response.statusCode}');
       }
-    } catch (error) {
-      print("Error fetching meals: $error");
+    } catch (e) {
+      print("Error fetching meals: $e");
+      _hasError = true;
+      _errorMessage = e.toString();
     }
 
     _isLoading = false;
@@ -121,6 +128,49 @@ class MealProvider with ChangeNotifier {
     }
     notifyListeners();
   }
+
+  Future<void> searchMeals(String restaurantId, String query) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final url =
+        'https://restaurant-reservation-sys.vercel.app/meals/restaurant/$restaurantId?search=$query';
+
+    print("Request URL: $url");
+    print("Request Header: ");
+
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      // Print response status and body
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['status'] == 'success') {
+          final mealsList = responseData['meals'] as List? ?? [];
+          List<Meal> loadedMeals = [];
+
+          for (var meal in mealsList) {
+            loadedMeals.add(Meal.fromJson(meal));
+          }
+
+          _meals = loadedMeals;
+        } else {
+          print('Failed to fetch meals: ${responseData['message']}');
+        }
+      } else {
+        print('Failed to load data, Status code: ${response.statusCode}');
+      }
+    } catch (error) {
+      print("Error searching meals: $error");
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
 
   // Clear the order
   void clearOrder() {

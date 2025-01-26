@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:seatview/Components/component.dart';
 import 'package:seatview/Main/AddVipRoomScreen.dart';
+import 'package:seatview/Main/ReviewScreen.dart';
 import 'package:seatview/model/user.dart';
-
 
 class OwnerHomeScreen extends StatefulWidget {
   @override
@@ -39,7 +40,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
     }
 
     final today = DateTime.now();
-    final formattedDate = DateFormat('MM-dd-yyyy').format(today);  // Updated format
+    final formattedDate = DateFormat('MM-dd-yyyy').format(today); // Updated format
 
     // Updated reservations URL with today's date
     final reservationsUrl = Uri.parse(
@@ -69,7 +70,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
 
         setState(() {
           reservations = List<Map<String, dynamic>>.from(reservationsData['reservations'] ?? []);
-          reviews = List<Map<String, dynamic>>.from(reviewsData['reviews'] ?? []);
+          reviews = List<Map<String, dynamic>>.from(reviewsData['data'] ?? []);
           vipRooms = List<Map<String, dynamic>>.from(vipRoomsData['vipRooms'] ?? []);
           isLoading = false;
         });
@@ -87,14 +88,12 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
     }
   }
 
-
   Future<void> updateReservationStatus(String reservationId, String newStatus) async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final token = userProvider.token ?? '';
-    final restaurantId = userProvider.user?.restaurant ?? '';
 
-    if (token.isEmpty || restaurantId.isEmpty) {
-      print('Token or restaurant ID is null or empty');
+    if (token.isEmpty) {
+      print('Token is null or empty');
       setState(() {
         hasError = true;
       });
@@ -102,17 +101,28 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
     }
 
     final url = Uri.parse(
-        'https://restaurant-reservation-sys.vercel.app/reservations/$reservationId');
-    final headers = {'token': '$token'};
+        'https://restaurant-reservation-sys.vercel.app/reservations/status/$reservationId');
+    final headers = {
+      'token': token,
+      'Content-Type': 'application/json',
+    };
     final body = json.encode({'status': newStatus});
 
+    print('Sending PATCH request to: $url');
+    print('Headers: $headers');
+    print('Body: $body');
+
     try {
-      final response = await http.put(url, headers: headers, body: body);
+      final response = await http.patch(url, headers: headers, body: body);
+      print('Response Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
       if (response.statusCode == 200) {
-        print('Reservation status updated');
-        fetchOwnerData();  // Refresh the data after updating
+        print('Reservation status updated to $newStatus');
+        fetchOwnerData(); // Refresh the data after updating
       } else {
         print('Failed to update reservation status: ${response.statusCode}');
+        print('Error Details: ${response.body}');
         setState(() {
           hasError = true;
         });
@@ -124,9 +134,6 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
       });
     }
   }
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -185,15 +192,21 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
                             reservation['status'] ?? 'Pending',
                             style: TextStyle(color: Colors.white),
                           ),
-                          backgroundColor: reservation['status'] == 'Confirmed'
+                          backgroundColor: reservation['status'] == 'completed'
                               ? Colors.green
                               : Colors.orange,
                         ),
-                        IconButton(
-                          icon: Icon(Icons.edit),
-                          onPressed: () {
-                            // You can update the status here (e.g., change it to "Confirmed")
-                            updateReservationStatus(reservation['_id'], 'Confirmed');
+                        PopupMenuButton<String>(
+                          onSelected: (String newStatus) {
+                            updateReservationStatus(reservation['_id'], newStatus);
+                          },
+                          itemBuilder: (BuildContext context) {
+                            return ['completed', 'canceled'].map((String status) {
+                              return PopupMenuItem<String>(
+                                value: status,
+                                child: Text(status),
+                              );
+                            }).toList();
                           },
                         ),
                       ],
@@ -206,9 +219,23 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
             SizedBox(height: 16),
 
             // Recent Reviews Section
-            Text(
-              "Recent Reviews",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Recent Reviews",
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                DefaultTextButton(
+                  onPressed: ()
+                  {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => ReviewScreen() ));
+                  },
+                  text: 'More Details',
+                  color: Colors.black,
+
+                ),
+              ],
             ),
             SizedBox(height: 8),
             reviews.isEmpty
@@ -225,18 +252,22 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
                     leading: CircleAvatar(
                       child: Icon(Icons.star, color: Colors.amber),
                     ),
-                    title: Text(review['customerName'] ?? 'Unknown'),
-                    subtitle: Text(review['comment'] ?? 'No comment'),
-                    trailing: IconButton(
-                      icon: Icon(Icons.reply),
-                      onPressed: () {
-                        // Handle reply action
-                      },
+                    title: Text(review['userId']['name'] ?? 'Unknown'),
+                    subtitle: Text(
+                      "${review['comment'] ?? 'No comment'}\n${DateFormat('MMM d, yyyy').format(DateTime.parse(review['createdAt']))}",
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(
+                        review['rate']?.toInt() ?? 0,
+                            (index) => Icon(Icons.star, color: Colors.amber, size: 16),
+                      ),
                     ),
                   ),
                 );
               },
             ),
+
             SizedBox(height: 16),
 
             // VIP Reserved Rooms Section

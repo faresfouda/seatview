@@ -13,7 +13,7 @@ class UserModel {
   final String role;
   final bool isConfirmed;
   final ImageData? image; // Changed to an `ImageData` object
-  final String? restaurant;
+  String? restaurant;
 
   UserModel({
     required this.id,
@@ -153,6 +153,19 @@ class UserProvider with ChangeNotifier {
     // Ensure UI is notified after data is updated
     await checkUserSession(); // Reload user session
     notifyListeners(); // Notify the UI to rebuild
+  }
+
+  // Update user's restaurant state
+  Future<void> updateUserRestaurant(String restaurantId) async {
+    if (_user != null) {
+      _user!.restaurant = restaurantId; // Update the restaurant ID in the user model
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_userKey, jsonEncode(_user!.toJson())); // Save updated user data
+
+      print('Updated user restaurant ID: $restaurantId');
+
+      notifyListeners(); // Notify listeners to update the UI
+    }
   }
 
   // Login function

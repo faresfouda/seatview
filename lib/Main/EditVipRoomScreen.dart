@@ -21,6 +21,7 @@ class EditVipRoomScreen extends StatefulWidget {
 class _EditVipRoomScreenState extends State<EditVipRoomScreen> {
   final _formKey = GlobalKey<FormState>();
   TextEditingController _nameController = TextEditingController();
+  TextEditingController _capacityController = TextEditingController();  // New controller for capacity
   List<File> _images = [];
   bool _isLoading = false;
 
@@ -28,6 +29,7 @@ class _EditVipRoomScreenState extends State<EditVipRoomScreen> {
   void initState() {
     super.initState();
     _nameController.text = widget.vipRoom['name']; // Initialize name controller with existing name
+    _capacityController.text = widget.vipRoom['capacity'].toString(); // Initialize capacity controller
   }
 
   Future<void> _pickImage() async {
@@ -60,13 +62,18 @@ class _EditVipRoomScreenState extends State<EditVipRoomScreen> {
     // Add the token to the headers
     request.headers['token'] = '$token';
 
-    // Add the name to the request
+    // Add the name and capacity to the request
     request.fields['name'] = _nameController.text;
+    request.fields['capacity'] = _capacityController.text;
 
     // Add the images to the request
     for (var image in _images) {
-      request.files.add(await http.MultipartFile.fromPath('images', image.path,
-        contentType: MediaType('image', 'jpeg'),));
+      String fileType = image.path.split('.').last.toLowerCase();
+      request.files.add(await http.MultipartFile.fromPath(
+        'images',
+        image.path,
+        contentType: MediaType('image', fileType),
+      ));
     }
 
     try {
@@ -113,6 +120,21 @@ class _EditVipRoomScreenState extends State<EditVipRoomScreen> {
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter a name';
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 16),
+                TextFormField(
+                  controller: _capacityController,
+                  decoration: InputDecoration(labelText: 'Capacity'),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter the capacity';
+                    }
+                    if (int.tryParse(value) == null) {
+                      return 'Please enter a valid number';
                     }
                     return null;
                   },

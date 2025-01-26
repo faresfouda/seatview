@@ -4,22 +4,22 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:seatview/API/reservation_services.dart';
 import 'package:seatview/model/meal.dart';
-import 'package:seatview/Components/MealCardWidget.dart'; // Import the MealCardWidget
-import 'package:seatview/Components/theme.dart'; // Import your theme
+import 'package:seatview/Components/MealCardWidget.dart';
+import 'package:seatview/Components/theme.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final DateTime selectedDate;
   final TimeOfDay selectedTime;
   final Map<String, dynamic> restaurant;
   final String selectedTable;
-  final String token; // Pass the token as a parameter
+  final String token;
 
   const CheckoutScreen({
     required this.selectedDate,
     required this.selectedTime,
     required this.restaurant,
     required this.selectedTable,
-    required this.token, // Include token as a parameter
+    required this.token,
     Key? key,
   }) : super(key: key);
 
@@ -33,13 +33,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final menuProvider = Provider.of<MealProvider>(context);
-    final orderedMeals = menuProvider.orderedMeals; // List of meals added to the order
-    final totalCost = menuProvider.totalCost; // Get the updated total cost from MenuProvider
+    final orderedMeals = menuProvider.orderedMeals;
+    final totalCost = menuProvider.totalCost;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Checkout'),
-        backgroundColor: AppTheme.primaryColor, // Use primaryColor from the theme
+        backgroundColor: AppTheme.primaryColor,
       ),
       body: Stack(
         children: [
@@ -48,25 +48,39 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Display the selected date and time
-                Text(
-                  'Date: ${DateFormat('yyyy-MM-dd').format(widget.selectedDate)}',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
+                // Date Section with an icon
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today, color: AppTheme.primaryColor),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Date: ${DateFormat('yyyy-MM-dd').format(widget.selectedDate)}',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Time: ${widget.selectedTime.format(context)}',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
+
+                // Time Section with an icon
+                Row(
+                  children: [
+                    Icon(Icons.access_time, color: AppTheme.primaryColor),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Time: ${widget.selectedTime.format(context)}',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
 
-                // Display the list of ordered meals
+                // Order Details Section with meal cards
                 Text(
                   'Order Details:',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -84,30 +98,57 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         mealName: meal.name,
                         mealImage: meal.imageUrl,
                         mealPrice: meal.price ?? 0.0,
-                        quantity: meal.quantity, // Pass the quantity to the widget
+                        quantity: meal.quantity,
                         onRemove: () {
-                          menuProvider.removeFromOrder(meal); // Remove the meal from the order
+                          menuProvider.removeFromOrder(meal);
                         },
                       );
                     },
                   ),
                 ),
 
-
                 const SizedBox(height: 20),
 
-                // Display the total cost
-                Text(
-                  'Total Cost: ${totalCost.toStringAsFixed(2)} L.E',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                    color: AppTheme.primaryColor, // Use primaryColor for total cost
+                // Total Cost Section with a card
+                Card(
+                  color: Colors.white,
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.monetization_on, color: AppTheme.primaryColor),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Total Cost:',
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          '${totalCost.toStringAsFixed(2)} L.E',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const Spacer(),
 
-                // Checkout button
+                // Checkout Button with professional styling
                 Center(
                   child: ElevatedButton(
                     onPressed: _isLoading
@@ -115,15 +156,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         : () async {
                       setState(() => _isLoading = true);
                       try {
-                        // Prepare meal data (mealId and quantity)
                         final mealData = orderedMeals.map((meal) {
                           return {
                             "meal": meal.id,
-                            "quantity": meal.quantity ?? 1, // Default quantity to 1 if not available
+                            "quantity": meal.quantity ?? 1,
                           };
                         }).toList();
 
-                        // Call the ReservationService to create the reservation
                         final reservationService = ReservationService();
                         final response = await reservationService.createReservation(
                           token: widget.token,
@@ -131,17 +170,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           restaurantId: widget.restaurant['id'],
                           date: DateFormat('MM-dd-yyyy').format(widget.selectedDate),
                           time: widget.selectedTime.format(context),
-                          mealId: mealData, // Pass the list of meal objects
+                          mealId: mealData,
                         );
 
                         if (response['message'] == 'Reservation created successfully') {
-                          // Show confirmation dialog
                           showDialog(
                             context: context,
                             builder: (context) => AlertDialog(
                               title: const Text('Reservation Confirmed'),
                               content: Text(
-                                  'Your reservation has been made for ${DateFormat('yyyy-MM-dd').format(widget.selectedDate)} at ${widget.selectedTime.format(context)}.'),
+                                'Your reservation has been made for ${DateFormat('yyyy-MM-dd').format(widget.selectedDate)} at ${widget.selectedTime.format(context)}.',
+                              ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pushNamedAndRemoveUntil(
@@ -155,7 +194,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ),
                           );
                         } else {
-                          // Show error message
                           showDialog(
                             context: context,
                             builder: (context) => AlertDialog(
@@ -177,10 +215,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     },
                     child: const Text('Confirm Order'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor, // Use primaryColor from the theme
+                      backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,

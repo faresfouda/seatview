@@ -9,6 +9,7 @@ import 'package:seatview/Login/Forget_password.dart';
 import 'package:seatview/Login/Login.dart';
 import 'package:seatview/Login/RestaurantOwnerSignupScreen.dart';
 import 'package:seatview/Login/Signup.dart';
+import 'package:seatview/Main/AddNewRestaurantScreen.dart';
 import 'package:seatview/Main/DessertsScreen.dart';
 import 'package:seatview/Main/DrinksScreen.dart';
 import 'package:seatview/Main/FavoritesProvider.dart';

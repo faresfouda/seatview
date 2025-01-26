@@ -269,32 +269,34 @@ class OwnerService {
     required String restaurantId,
     required String tableNumber,
     required String capacity,
+    required File image, // Add image parameter
     required VoidCallback onSuccess,
     required Function(String) onError,
   }) async {
     try {
       final uri = Uri.parse('https://restaurant-reservation-sys.vercel.app/tables/create');
+      final request = http.MultipartRequest('POST', uri);
 
-      final Map<String, dynamic> requestBody = {
-        'restaurantId': restaurantId,
-        'tableNumber': tableNumber,
-        'capacity': capacity,
-      };
+      // Add headers and fields
+      request.headers['token'] = token;
+      request.fields['restaurantId'] = restaurantId;
+      request.fields['tableNumber'] = tableNumber;
+      request.fields['capacity'] = capacity;
+
+      // Attach the image
+      request.files.add(await http.MultipartFile.fromPath(
+        'image', // Field name
+        image.path,
+        contentType: MediaType('image', 'jpeg'),
+      ));
 
       // Debug log
-      print('Request body: ${jsonEncode(requestBody)}');
-      print('Request headers: {token: $token, Content-Type: application/json}');
+      print('Request headers: ${request.headers}');
+      print('Request fields: ${request.fields}');
+      print('Request files: ${request.files.map((file) => file.filename)}');
 
-      final response = await http.post(
-        uri,
-        headers: {
-          'token': token,
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(requestBody),
-      );
-
-      final responseBody = response.body;
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
       print('Response body: $responseBody');
 
       if (response.statusCode == 201) {
@@ -307,4 +309,5 @@ class OwnerService {
       onError('An error occurred: $e');
     }
   }
+
 }

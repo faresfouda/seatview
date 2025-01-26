@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:seatview/Components/MealCardWidget.dart';
 import 'package:seatview/Main/CheckoutScreen.dart';
+import 'package:seatview/Main/SearchMealScreen.dart';
 import 'package:seatview/model/meal.dart';
 import 'package:seatview/model/user.dart';
 
@@ -132,7 +133,23 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
         ),
         backgroundColor: Theme.of(context).primaryColor,
         iconTheme: IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SearchScreen(
+                    restaurantId: widget.restaurant['id'],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
+
       body: menuProvider.isLoading
           ? Center(child: CircularProgressIndicator())
           : mealsData.isEmpty

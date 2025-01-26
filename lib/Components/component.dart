@@ -104,7 +104,7 @@ class DefaultElevatedButton extends StatelessWidget {
         backgroundColor: Colors.lightBlue, // Change this to your desired color
         padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30.0),
+          borderRadius: BorderRadius.circular(12.0),
         ),
       ),
       child: Row(
@@ -140,7 +140,7 @@ class DefaultSnackbar {
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
     );

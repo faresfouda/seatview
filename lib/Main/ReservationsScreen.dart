@@ -102,6 +102,48 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     }
   }
 
+  Future<void> updateReservationStatus(String reservationId, String status) async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final token = userProvider.token ?? '';
+
+    if (token.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Authentication error. Please log in again.')),
+      );
+      return;
+    }
+
+    final url = Uri.parse(
+        'https://restaurant-reservation-sys.vercel.app/reservations/status/$reservationId');
+
+    try {
+      final response = await http.patch(
+        url,
+        headers: {
+          'token': token,
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({'status': status}),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Reservation status updated to $status')),
+        );
+        // Refresh the reservations list
+        fetchReservations();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update reservation status')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating reservation status: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -154,7 +196,8 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                   : Column(
                 children: entry.value.map((reservation) {
                   return InkWell(
-                    onTap: () => showReservationDetails(context, reservation),
+                    onTap: () => showReservationDetails(
+                        context, reservation),
                     child: Card(
                       margin: const EdgeInsets.symmetric(vertical: 8.0),
                       elevation: 3,
@@ -179,14 +222,15 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     );
   }
 
-  // Show reservation details method (as before)
   void showReservationDetails(BuildContext context, Map<String, dynamic> reservation) {
+    String selectedStatus = reservation["status"];
+
     showModalBottomSheet(
       context: context,
       builder: (context) => Padding(
         padding: const EdgeInsets.all(16.0),
         child: Container(
-          width: double.infinity, // Set width to infinity
+          width: double.infinity,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -201,7 +245,6 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
               Text("Status: ${reservation["status"]}"),
               const SizedBox(height: 16),
               Text("Meals:"),
-              // Display meal details if available
               if (reservation["mealId"] != null && reservation["mealId"].isNotEmpty)
                 ...reservation["mealId"].map<Widget>((meal) {
                   return Padding(
@@ -211,6 +254,25 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                     ),
                   );
                 }).toList(),
+              const SizedBox(height: 16),
+              DropdownButton<String>(
+                value: selectedStatus,
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      selectedStatus = newValue;
+                    });
+                    updateReservationStatus(reservation["id"], newValue);
+                  }
+                },
+                items: <String>['reserved', 'completed', 'canceled']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+              ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
@@ -224,5 +286,4 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
       ),
     );
   }
-
 }

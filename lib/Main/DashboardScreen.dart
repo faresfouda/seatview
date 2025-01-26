@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:seatview/API/ReviewService.dart';
+import 'package:seatview/Components/theme.dart';
 import 'package:seatview/model/user.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -76,13 +77,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     double totalCost = 0;
     if (bookingOrder['mealId'] != null) {
       totalCost = bookingOrder['mealId'].fold(0.0, (sum, meal) {
-        double price = double.tryParse(meal['meal']!['price'].toString()) ?? 0.0; // Get meal price
-        int quantity = int.tryParse(meal['quantity'].toString()) ?? 0; // Get meal quantity
-        return sum + (price * quantity); // Add price * quantity to the sum
+        // Safely access price and quantity
+        double price = double.tryParse(meal['meal']?['price']?.toString() ?? '0') ?? 0.0;
+        int quantity = int.tryParse(meal['quantity']?.toString() ?? '0') ?? 0;
+        return sum + (price * quantity);
       });
     }
     return totalCost;
   }
+
 
   // Function to show booking details in an alert dialog
   void _showBookingDetails(Map<String, dynamic> bookingOrder) {
@@ -112,9 +115,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Icon(Icons.fastfood, size: 18, color: Colors.green),
                         SizedBox(width: 8),
-                        Text('Meal: ${meal['meal']?['name'] ?? 'Unknown Meal'} - Quantity: ${meal['quantity']}'),
+                        Expanded(
+                          child: Text(
+                            'Meal: ${meal['meal']?['name'] ?? 'Unknown Meal'} - Quantity: ${meal['quantity']}',
+                            style: TextStyle(fontSize: 14),
+                            maxLines: 2, // Limit the text to 2 lines
+                            overflow: TextOverflow.ellipsis, // Add ellipsis if text exceeds 2 lines
+                            softWrap: true, // Ensure the text wraps to the next line
+                          ),
+                        ),
                       ],
                     ),
+
+
                   );
                 }).toList() ?? [],
                 const SizedBox(height: 8),
@@ -173,7 +186,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Your Bookings'),
-        backgroundColor: Colors.red[900],
+        backgroundColor: AppTheme.primaryColor,
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator()) // Show loading indicator

@@ -41,12 +41,12 @@ class AuthService {
             'name': user['name'] ?? '',
             'email': user['email'] ?? '',
             'phone': user['phone'] ?? '',
-            'imageUrl': user['imageUrl'] ?? '', // Add imageUrl here if it exists
+            'imageUrl': user['image'] ?? '',
             'isConfirmed': user['isConfirmed'] ?? false,
             'role': user['role']??'',
             'restaurant':user['restaurant'],
           },
-          'token': token ?? '', // Include the token
+          'token': token ?? '',
         };
       } else {
         final errorData = jsonDecode(response.body);
@@ -175,6 +175,42 @@ class AuthService {
       };
     }
   }
+
+  Future<Map<String, dynamic>> forgotPassword({required String email}) async {
+    const String url = 'https://your-api-url.com/users/forgot-password';
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+        }),
+      );
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': responseData['message'] ?? 'Password reset email sent successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': responseData['message'] ?? 'Failed to send password reset email',
+        };
+      }
+    } catch (e) {
+      print("Forgot password error: $e");
+      return {
+        'success': false,
+        'message': 'An error occurred. Please try again later.',
+      };
+    }
+  }
 }
 
 Future<void> addFavorite(String token, String restaurantId) async {
@@ -204,5 +240,7 @@ Future<void> addFavorite(String token, String restaurantId) async {
   } catch (e) {
     print('An error occurred: $e');
   }
+
+
 }
 
