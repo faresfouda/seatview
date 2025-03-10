@@ -1,16 +1,24 @@
-# seatview
+# SeatView - Flutter App
 
-A new Flutter project.
+SeatView is a mobile application built with Flutter that allows users to view and book seats for various venues and events. It provides a smooth and interactive experience for users to explore seating arrangements and manage bookings.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- **Interactive Seating Chart:** Real-time view of available and occupied seats.
+- **Seat Booking:** Effortlessly select and book available seats.
+- **Customizable Layouts:** Adjust the seating arrangements to match venue layouts.
+- **Real-Time Availability:** Instant updates on seat availability.
+- **Smooth User Experience:** Seamless navigation and UI designed with Flutter.
 
-A few resources to get you started if this is your first Flutter project:
+## Prerequisites
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- Flutter SDK (version X.X or higher)
+- Dart SDK (version X.X or higher)
+- Android Studio or VS Code for development
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Installation
+
+### Step 1: Clone the repository
+
+```bash
+git clone https://github.com/your-username/SeatView.git
